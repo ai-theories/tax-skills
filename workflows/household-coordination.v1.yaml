@@ -1,0 +1,32 @@
+# Coordinated, NOT jointly optimized. required_scope is deliberately
+# household_coordinated: the `household` scope stays unavailable until a
+# validated joint optimizer exists (see docs/joint-optimization.md).
+id: household-coordination.v1
+mode: analysis_only
+required_scope: household_coordinated
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+  - id: constraints
+    operation: compile_constraints
+    requires: [lot_check]
+  - id: coordinate
+    operation: coordinate_units
+    requires: [constraints]
+  - id: gain_loss
+    operation: calculate_gain_loss
+    requires: [coordinate]
+  - id: wash_sale
+    operation: screen_wash_sales
+    requires: [gain_loss]
+  - id: validation
+    operation: validate_scenario
+    requires: [wash_sale]
+  - id: evidence
+    operation: build_evidence_pack
+    requires: [validation]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

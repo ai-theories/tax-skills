@@ -1,0 +1,50 @@
+# The cash objective, and what an adapter may do to reach it.
+- {id: cash-met-exactly-from-losses, category: cash_target, portfolio_ref: losses_only,
+   description: "Losses alone can satisfy a target without touching the budget.",
+   constraints: {cash_target: "6200", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {solver_status: feasible, cash_at_least: "6200"}}
+- {id: cash-requires-a-gain, category: cash_target, portfolio_ref: mixed,
+   description: "When losses are insufficient, reaching the target means realizing a gain.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible, cash_at_least: "20000"}}
+- {id: cash-unreachable-is-infeasible, category: cash_target, portfolio_ref: mixed,
+   description: "A target beyond the whole portfolio is infeasible, not partially served as success.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}},
+   expect: {solver_status: infeasible}}
+- {id: cash-unreachable-within-budget, category: cash_target, portfolio_ref: mixed,
+   description: "Cash exists in the portfolio but only behind gains the budget forbids.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {solver_status: infeasible, gross_gains_at_most: "0"}}
+- {id: cash-shortfall-is-reported, category: cash_target, portfolio_ref: mixed,
+   description: "An infeasible run says how far short it fell.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {solver_status: infeasible, diagnostics_include: [cash_shortfall]}}
+- {id: cash-infeasibility-gives-a-reason, category: cash_target, portfolio_ref: mixed,
+   description: "The diagnostics must say why, not merely that it failed.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {diagnostics_include: [infeasibility_reason]}}
+- {id: cash-zero-needs-no-trade, category: cash_target, portfolio_ref: gains_only,
+   description: "A zero target must not provoke a gain nobody asked for.",
+   constraints: {cash_target: "0", gain_budget: {amount: "15000"}},
+   expect: {gross_gains_at_most: "0"}}
+- {id: cash-small-target-from-one-lot, category: cash_target, portfolio_ref: losses_only,
+   description: "A small target should not require liquidating the whole portfolio.",
+   constraints: {cash_target: "100", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: cash-whole-portfolio-exactly, category: cash_target, portfolio_ref: losses_only,
+   description: "A target equal to the entire portfolio value is reachable.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible, cash_at_least: "14200"}}
+- {id: cash-one-cent-beyond-the-portfolio, category: cash_target, portfolio_ref: losses_only,
+   description: "A cent more than everything is infeasible.",
+   constraints: {cash_target: "14200.01", gain_budget: {amount: "15000"}},
+   expect: {solver_status: infeasible}}
+- {id: cash-never-relaxes-the-budget-to-succeed, category: cash_target, portfolio_ref: mixed,
+   description: "An adapter may not breach a hard budget to report success.",
+   constraints: {cash_target: "34200", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "1000"}}
+- {id: cash-withdrawal-account-named, category: cash_target, portfolio_ref: mixed,
+   description: "A named withdrawal account does not change conservation or the budget.",
+   constraints: {cash_target: "6000", withdrawal_account: acct_a,
+                 gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}

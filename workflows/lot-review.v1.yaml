@@ -1,0 +1,20 @@
+id: lot-review.v1
+mode: analysis_only
+required_scope: account
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+  - id: gain_loss
+    operation: calculate_gain_loss
+    requires: [lot_check]
+  - id: wash_sale
+    operation: screen_wash_sales
+    requires: [gain_loss]
+  - id: evidence
+    operation: build_evidence_pack
+    requires: [wash_sale]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

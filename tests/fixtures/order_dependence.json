@@ -1,0 +1,19 @@
+{
+  "accounts": [
+    {"account_id": "acct_a", "tax_unit_id": "tu_x", "registration": "TAXABLE", "custodian": "Schwab", "owner_ref": "owner_x"},
+    {"account_id": "acct_b", "tax_unit_id": "tu_x", "registration": "TAXABLE", "custodian": "Fidelity", "owner_ref": "owner_x"}
+  ],
+  "lots": [
+    {"lot_id": "lot_a", "account_id": "acct_a", "security_id": "AAA", "quantity": "100", "acquisition_date": "2020-01-01", "basis": "1000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true},
+    {"lot_id": "lot_b", "account_id": "acct_b", "security_id": "BBB", "quantity": "100", "acquisition_date": "2020-01-01", "basis": "15000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true}
+  ],
+  "transactions": [],
+  "coverage": [
+    {"account_id": "acct_a", "start": "2019-01-01", "end": "2026-09-15", "source_ref": "export_a"},
+    {"account_id": "acct_b", "start": "2019-01-01", "end": "2026-09-15", "source_ref": "export_b"}
+  ],
+  "reported_positions": [
+    {"account_id": "acct_a", "security_id": "AAA", "quantity": "100"},
+    {"account_id": "acct_b", "security_id": "BBB", "quantity": "100"}
+  ]
+}

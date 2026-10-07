@@ -1,0 +1,43 @@
+# What an adapter must refuse rather than approximate.
+- {id: scope-household-refused-by-account-engine, category: scope, portfolio_ref: household,
+   scope: household,
+   adapters: [oracle-account-adapter],
+   description: "An account-scoped engine must refuse household scope rather than looping over accounts.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {refused: true, refusal_code: UNSUPPORTED_SCOPE}}
+- {id: scope-unconfigured-adapter-refuses, category: scope, portfolio_ref: mixed,
+   adapters: [oracle-account-adapter(unconfigured)],
+   description: "An adapter with no pinned engine build refuses rather than guessing.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {refused: true, refusal_code: UNSUPPORTED_SCOPE}}
+- {id: scope-coordinated-household-is-served, category: scope, portfolio_ref: household,
+   scope: household_coordinated, adapters: [household-coordinator],
+   description: "The coordinator accepts the scope it declares and produces a candidate.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: scope-coordination-never-claims-optimality, category: scope,
+   portfolio_ref: household, scope: household_coordinated,
+   adapters: [household-coordinator],
+   description: "A coordinated result must not describe itself as optimal.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_include: [optimality_gap, order_rule, allocation_order]}}
+- {id: scope-coordination-declares-order-dependence, category: scope,
+   portfolio_ref: household, scope: household_coordinated,
+   adapters: [household-coordinator],
+   description: "Order dependence is stated, because it changes the answer.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_mention: ["'order_dependent': True"]}}
+- {id: scope-coordination-budget-by-tax-unit, category: scope, portfolio_ref: household,
+   scope: household_coordinated, adapters: [household-coordinator],
+   description: "Budgets are accounted per taxpayer, never pooled across a household.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_include: [budget_consumed_by_tax_unit]}}
+- {id: scope-coordination-respects-the-budget, category: scope, portfolio_ref: household,
+   scope: household_coordinated, adapters: [household-coordinator],
+   description: "Coordination does not loosen the shared budget it is coordinating.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "1000"}}
+- {id: scope-coordination-conserves-positions, category: scope, portfolio_ref: household,
+   scope: household_coordinated, adapters: [household-coordinator],
+   description: "The combined trade list across units must still be valid as a whole.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"}}, expect: {}}

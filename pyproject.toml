@@ -1,0 +1,20 @@
+[project]
+name = "taxagent"
+version = "0.1.0"
+description = "TaxAgent: agent-facing tax analysis plugin with a deterministic financial backend"
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4.0", "PyYAML>=6.0"]
+
+[project.scripts]
+taxagent = "taxagent.cli:main"
+taxagent-mcp = "taxagent.gateway.mcp_server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,36 @@
+# Joint household optimization, as distinct from sequential coordination.
+#
+# The coordinator serves accounts in a declared order and reports what the
+# order cost. This solves every eligible lot in the household at once and,
+# where the search exhausts, proves there was nothing better. Both templates
+# exist because the two make different claims, and a caller must be able to
+# ask for the one whose claim they want.
+id: household-optimize.v1
+mode: analysis_only
+required_scope: household
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+  - id: constraints
+    operation: compile_constraints
+    requires: [lot_check]
+  - id: optimize
+    operation: select_household_jointly
+    requires: [constraints]
+  - id: gain_loss
+    operation: calculate_gain_loss
+    requires: [optimize]
+  - id: wash_sale
+    operation: screen_wash_sales
+    requires: [gain_loss]
+  - id: validation
+    operation: validate_scenario
+    requires: [wash_sale]
+  - id: evidence
+    operation: build_evidence_pack
+    requires: [validation]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

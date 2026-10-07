@@ -1,0 +1,84 @@
+# Foreign earned income exclusion and foreign gift reporting.
+
+- id: feie-full-year-exclusion-caps-the-income
+  rules: [foreign_earned_income_exclusion]
+  description: >
+    180,000 of foreign earned income against the 132,900 exclusion for a full
+    qualifying year leaves 47,100 before any housing amount.
+  calc: feie
+  given: {foreign_earned_income: "180000"}
+  expect:
+    prorated_exclusion: "132900.00"
+    income_excluded: "132900.00"
+    eligibility_established: false
+
+- id: feie-is-prorated-for-a-partial-qualifying-period
+  rules: [foreign_earned_income_exclusion]
+  description: >
+    183 qualifying days is 183/365 of the year, so the exclusion is
+    132,900 x 183/365 = 66,632.05 rather than the full amount.
+  calc: feie
+  given: {foreign_earned_income: "180000", qualifying_days: 183}
+  expect: {prorated_exclusion: "66632.05"}
+
+- id: feie-housing-is-the-excess-over-a-base-and-is-capped
+  rules: [housing_base_fraction, housing_limit_fraction]
+  description: >
+    Base is 16% of 132,900 = 21,264 and the limit is 30% = 39,870. With 45,000
+    of expenses the limit binds, so the housing amount is 39,870 - 21,264 =
+    18,606. Total excluded is 132,900 + 18,606 = 151,506.
+  calc: feie
+  given: {foreign_earned_income: "180000", housing_expenses: "45000"}
+  expect:
+    housing_base: "21264.00"
+    housing_limit: "39870.00"
+    housing_exclusion: "18606.00"
+    total_excluded: "151506.00"
+    income_remaining: "28494.00"
+
+- id: feie-housing-below-the-base-gives-nothing
+  rules: [housing_base_fraction]
+  description: >
+    Expenses of 15,000 are below the 21,264 base, so there is no housing
+    amount at all. The base is a floor, not a starting allowance.
+  calc: feie
+  given: {foreign_earned_income: "180000", housing_expenses: "15000"}
+  expect: {housing_exclusion: "0.00", total_excluded: "132900.00"}
+
+- id: feie-cannot-exclude-more-than-was-earned
+  rules: [foreign_earned_income_exclusion]
+  description: >
+    Income of 50,000 is below the exclusion, so only 50,000 is excluded and
+    nothing remains for a housing amount to attach to.
+  calc: feie
+  given: {foreign_earned_income: "50000", housing_expenses: "45000"}
+  expect: {income_excluded: "50000.00", total_excluded: "50000.00",
+           income_remaining: "0.00"}
+
+- id: foreign-gift-from-an-individual-uses-the-statutory-figure
+  rules: [foreign_gift_reporting_threshold]
+  description: >
+    Gifts from foreign individuals and estates use the flat 100,000 statutory
+    threshold, which section 6039F does not index, so 150,000 is reportable.
+  calc: foreign_gift
+  given: {amount_received: "150000", source: individual}
+  expect: {threshold: "100000.00", reporting_required: true}
+
+- id: foreign-gift-from-a-corporation-uses-the-indexed-figure
+  rules: [foreign_gift_reporting_threshold]
+  description: >
+    Gifts from foreign corporations and partnerships use the much lower
+    inflation-adjusted threshold of 20,573, so 25,000 is reportable where the
+    same amount from an individual would not be.
+  calc: foreign_gift
+  given: {amount_received: "25000", source: corporation}
+  expect: {threshold: "20573.00", reporting_required: true}
+
+- id: foreign-gift-below-the-threshold-is-not-reportable
+  rules: [foreign_gift_reporting_threshold]
+  description: >
+    90,000 from a foreign individual is under the 100,000 threshold. It is
+    still not income either way; the question here is disclosure only.
+  calc: foreign_gift
+  given: {amount_received: "90000", source: individual}
+  expect: {reporting_required: false}

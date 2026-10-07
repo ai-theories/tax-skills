@@ -1,0 +1,65 @@
+# Bundles available to this deployment. A bundle absent here cannot be resolved
+# even if its file exists, so adding a pack is a deliberate release step.
+schema_version: "1.0"
+# Two kinds of pack: structural rules that rarely move, and year-adjusted
+# income parameters that move every year. They are versioned separately so a
+# new tax year does not require re-reviewing section 1091.
+default_bundles:
+  US_FEDERAL:
+    2024: us-federal-investment-rules.v1
+    2025: us-federal-investment-rules.v1
+    2026: us-federal-investment-rules.v1
+bundles:
+  - bundle_id: us-federal-investment-rules.v1
+    file: us-federal-investment-rules.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-income-2026.v1
+    file: us-federal-income-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-estate-gift-2026.v1
+    file: us-federal-estate-gift-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-international-2026.v1
+    file: us-federal-international-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-business-2026.v1
+    file: us-federal-business-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-compliance-2026.v1
+    file: us-federal-compliance-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-salt-2026.v1
+    file: us-federal-salt-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+  - bundle_id: us-federal-muni-2026.v1
+    file: us-federal-muni-2026.v1.yaml
+    status: reviewed
+    supersedes: null
+
+income_bundles:
+  US_FEDERAL:
+    2026: us-federal-income-2026.v1
+
+# Packs read by one domain engine each. A domain absent here cannot be
+# resolved, so adding a domain is a deliberate release step like any other.
+domain_bundles:
+  US_FEDERAL:
+    estate:
+      2026: us-federal-estate-gift-2026.v1
+    international:
+      2026: us-federal-international-2026.v1
+    business:
+      2026: us-federal-business-2026.v1
+    compliance:
+      2026: us-federal-compliance-2026.v1
+    salt:
+      2026: us-federal-salt-2026.v1
+    muni:
+      2026: us-federal-muni-2026.v1

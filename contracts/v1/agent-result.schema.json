@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/agent-result.schema.json",
+  "title": "AgentResult",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "status"
+  ],
+  "additionalProperties": false,
+  "description": "Untrusted until validated. Facts and interpretations are separated.",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "needs_review",
+        "failed",
+        "blocked"
+      ]
+    },
+    "artifact_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "source_ref": {
+            "type": "string"
+          },
+          "affected_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "authority": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "proposed_assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "unmet_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

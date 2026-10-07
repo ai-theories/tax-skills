@@ -1,0 +1,179 @@
+# Skill registry consumed by our backend. SKILL.md tells the host how to work;
+# this file tells the backend what each skill is permitted to request.
+schema_version: '1.0'
+skills:
+- skill_id: tax-intake
+  version: '1.0'
+  intents:
+  - intake
+  required_inputs:
+  - subject_ref
+  workflow_templates:
+  - intake.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: lot-review
+  version: '1.0'
+  intents:
+  - lot_review
+  required_inputs:
+  - subject_ref
+  - snapshot_ref
+  workflow_templates:
+  - lot-review.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: gain-loss-review
+  version: '1.0'
+  intents:
+  - gain_loss_review
+  required_inputs:
+  - subject_ref
+  - snapshot_ref
+  workflow_templates:
+  - lot-review.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: wash-sale-review
+  version: '1.0'
+  intents:
+  - wash_sale_review
+  required_inputs:
+  - subject_ref
+  - snapshot_ref
+  workflow_templates:
+  - lot-review.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: harvest-review
+  version: '1.0'
+  intents:
+  - harvest_review
+  required_inputs:
+  - subject_ref
+  - snapshot_ref
+  - constraint_set_ref
+  workflow_templates:
+  - harvest-review.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: tax-review-pack
+  version: '1.0'
+  intents:
+  - review_pack
+  required_inputs:
+  - run_ref
+  workflow_templates: []
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: estate-review
+  version: '1.0'
+  intents:
+  - estate_review
+  required_inputs:
+  - gross_estate
+  workflow_templates: []
+  calculators:
+  - estate_tax
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: gift-planning
+  version: '1.0'
+  intents:
+  - gift_planning
+  required_inputs:
+  - gift_amount
+  workflow_templates: []
+  calculators:
+  - gift_exclusion
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: expat-review
+  version: '1.0'
+  intents:
+  - expat_review
+  required_inputs:
+  - foreign_earned_income
+  workflow_templates: []
+  calculators:
+  - feie
+  - foreign_gift
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: entity-review
+  version: '1.0'
+  intents:
+  - entity_review
+  required_inputs: []
+  workflow_templates: []
+  calculators:
+  - section_179
+  - entity_comparison
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: penalty-review
+  version: '1.0'
+  intents:
+  - penalty_review
+  required_inputs: []
+  workflow_templates: []
+  calculators:
+  - filing_penalty
+  - entity_penalty
+  - safe_harbour
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: salt-review
+  version: '1.0'
+  intents:
+  - salt_review
+  required_inputs: []
+  workflow_templates: []
+  calculators:
+  - salt_cap
+  - state_coverage
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: household-coordination
+  version: '1.0'
+  intents:
+  - household_coordination
+  required_inputs:
+  - subject_ref
+  workflow_templates:
+  - household-coordination.v1
+  - household-optimize.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: rebalance-review
+  version: '1.0'
+  intents:
+  - rebalance_review
+  required_inputs:
+  - subject_ref
+  - target_weights
+  workflow_templates:
+  - account-rebalance.v1
+  output_contract: evidence-package.v1
+  default_mode: analysis_only
+- skill_id: tax-profile
+  version: '1.0'
+  intents:
+  - tax_profile
+  required_inputs:
+  - subject_ref
+  workflow_templates: []
+  output_contract: calculation.v1
+  default_mode: analysis_only
+- skill_id: muni-review
+  version: '1.0'
+  intents:
+  - muni_review
+  required_inputs: []
+  workflow_templates: []
+  calculators:
+  - muni_yield
+  - muni_discount
+  - muni_premium
+  output_contract: calculation.v1
+  default_mode: analysis_only

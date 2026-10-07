@@ -1,0 +1,285 @@
+# The MCP tool surface, server by server.
+#
+# `implemented` means a caller can invoke it through that server. An operation
+# that runs only as a step inside a workflow template is `internal_operation`:
+# real code, but not reachable from a tool call, so claiming it here would tell
+# a host it can do something it cannot.
+#
+# Every implemented tool names the server that exposes it, and a test asserts
+# each server's live tools/list matches this file exactly in both directions.
+#
+# No execute_trade or file_return tool exists in this release.
+schema_version: '2.0'
+servers:
+- id: federal
+  name: taxagent-federal
+  needs_identity: false
+  summary: US federal tax calculations over figures you supply.
+- id: estate
+  name: taxagent-estate
+  needs_identity: false
+  summary: Federal estate tax, gift exclusions and fiduciary income tax.
+- id: international
+  name: taxagent-international
+  needs_identity: false
+  summary: Foreign earned income exclusion and foreign gift reporting.
+- id: business
+  name: taxagent-business
+  needs_identity: false
+  summary: Section 179 expensing and C corporation versus pass-through.
+- id: compliance
+  name: taxagent-compliance
+  needs_identity: false
+  summary: Late filing and payment penalties, and the estimated tax safe harbour.
+- id: muni
+  name: taxagent-muni
+  needs_identity: false
+  summary: Municipal bond yields, market discount and premium amortization.
+- id: salt
+  name: taxagent-salt
+  needs_identity: false
+  summary: The federal cap on deducting state and local tax.
+- id: portfolio
+  name: taxagent-portfolio
+  needs_identity: true
+  summary: 'Account-scope lot analysis: gain and loss, wash-sale screening, loss-harvest scenarios.'
+- id: household
+  name: taxagent-household
+  needs_identity: true
+  summary: Household and UMA-sleeve coordination over one shared budget per tax unit.
+tools:
+- name: calculate_federal
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_capgains
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_niit
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_amt
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_qbi
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_loss
+  server: federal
+  mode: calculation
+  status: implemented
+- name: get_federal_capabilities
+  server: federal
+  mode: calculation
+  status: implemented
+- name: calculate_estate_tax
+  server: estate
+  mode: calculation
+  status: implemented
+- name: calculate_gift_exclusion
+  server: estate
+  mode: calculation
+  status: implemented
+- name: calculate_fiduciary_tax
+  server: estate
+  mode: calculation
+  status: implemented
+- name: get_estate_capabilities
+  server: estate
+  mode: calculation
+  status: implemented
+- name: calculate_feie
+  server: international
+  mode: calculation
+  status: implemented
+- name: calculate_foreign_gift
+  server: international
+  mode: calculation
+  status: implemented
+- name: get_international_capabilities
+  server: international
+  mode: calculation
+  status: implemented
+- name: calculate_section_179
+  server: business
+  mode: calculation
+  status: implemented
+- name: calculate_entity_comparison
+  server: business
+  mode: calculation
+  status: implemented
+- name: get_business_capabilities
+  server: business
+  mode: calculation
+  status: implemented
+- name: calculate_filing_penalty
+  server: compliance
+  mode: calculation
+  status: implemented
+- name: calculate_entity_penalty
+  server: compliance
+  mode: calculation
+  status: implemented
+- name: calculate_safe_harbour
+  server: compliance
+  mode: calculation
+  status: implemented
+- name: get_compliance_capabilities
+  server: compliance
+  mode: calculation
+  status: implemented
+- name: calculate_muni_yield
+  server: muni
+  mode: calculation
+  status: implemented
+- name: calculate_muni_discount
+  server: muni
+  mode: calculation
+  status: implemented
+- name: calculate_muni_premium
+  server: muni
+  mode: calculation
+  status: implemented
+- name: get_muni_capabilities
+  server: muni
+  mode: calculation
+  status: implemented
+- name: calculate_salt_cap
+  server: salt
+  mode: calculation
+  status: implemented
+- name: calculate_state_coverage
+  server: salt
+  mode: calculation
+  status: implemented
+- name: get_salt_capabilities
+  server: salt
+  mode: calculation
+  status: implemented
+- name: check_holdings
+  server: portfolio
+  mode: internal_write
+  status: implemented
+  runs: intake.v1
+- name: review_rebalance
+  server: portfolio
+  mode: internal_write
+  status: implemented
+- name: review_lots
+  server: portfolio
+  mode: internal_write
+  status: implemented
+  runs: lot-review.v1
+- name: optimize_harvest
+  server: portfolio
+  mode: internal_write
+  status: implemented
+- name: review_harvest
+  server: portfolio
+  mode: internal_write
+  status: implemented
+  runs: harvest-review.v1
+- name: resolve_subject
+  server: portfolio
+  mode: read
+  status: implemented
+- name: get_run_status
+  server: portfolio
+  mode: read
+  status: implemented
+- name: get_scenario
+  server: portfolio
+  mode: read
+  status: implemented
+- name: get_capabilities
+  server: portfolio
+  mode: read
+  status: implemented
+- name: optimize_household
+  server: household
+  mode: internal_write
+  status: implemented
+- name: coordinate_household
+  server: household
+  mode: internal_write
+  status: implemented
+  runs: household-coordination.v1
+- name: resolve_subject
+  server: household
+  mode: read
+  status: implemented
+- name: get_run_status
+  server: household
+  mode: read
+  status: implemented
+- name: get_scenario
+  server: household
+  mode: read
+  status: implemented
+- name: get_capabilities
+  server: household
+  mode: read
+  status: implemented
+- name: create_snapshot
+  mode: internal_write
+  status: internal_operation
+  runs_in:
+  - intake.v1
+  - lot-review.v1
+  - harvest-review.v1
+  - household-coordination.v1
+- name: validate_lots
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - intake.v1
+  - lot-review.v1
+  - harvest-review.v1
+  - household-coordination.v1
+- name: compile_constraints
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - harvest-review.v1
+  - household-coordination.v1
+- name: select_harvest_candidates
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - harvest-review.v1
+  - household-coordination.v1
+- name: calculate_gain_loss
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - lot-review.v1
+  - harvest-review.v1
+  - household-coordination.v1
+- name: screen_wash_sales
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - lot-review.v1
+  - harvest-review.v1
+  - household-coordination.v1
+- name: build_evidence_pack
+  mode: internal_write
+  status: internal_operation
+  runs_in:
+  - lot-review.v1
+  - harvest-review.v1
+  - household-coordination.v1
+- name: select_household_jointly
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - household-optimize.v1
+- name: select_account_optimally
+  mode: calculation
+  status: internal_operation
+  runs_in:
+  - account-optimize.v1

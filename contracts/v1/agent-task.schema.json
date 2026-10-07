@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/agent-task.schema.json",
+  "title": "AgentTask",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "parent_run_id",
+    "role",
+    "objective",
+    "expected_output",
+    "limits"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "parent_run_id": {
+      "type": "string"
+    },
+    "role": {
+      "enum": [
+        "source-extract",
+        "lot-sanity",
+        "rule-evidence",
+        "scenario-review",
+        "report-review"
+      ]
+    },
+    "objective": {
+      "type": "string"
+    },
+    "input_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expected_output": {
+      "type": "string"
+    },
+    "allowed_capability_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "max_tool_calls",
+        "max_output_tokens"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "deadline": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

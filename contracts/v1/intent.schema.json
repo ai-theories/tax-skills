@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/intent.schema.json",
+  "title": "Intent",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "intent",
+    "mode",
+    "subject_ref"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.\\d+$"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "analysis_only",
+      "description": "This release supports analysis only."
+    },
+    "subject_ref": {
+      "type": "string"
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+\\.\\d{2}$",
+                "description": "Decimal string; never a float."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "security_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_max_weight": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A reduction objective without a target is not a bound."
+          },
+          "withdrawal_account": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "realized_gain_budget",
+              "tax_dollar_budget"
+            ]
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+\\.\\d{2}$",
+                "description": "Decimal string; never a float."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "netting_basis": {
+            "enum": [
+              "gross_gains",
+              "net_gains",
+              null
+            ]
+          },
+          "period": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "external_realized": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+\\.\\d{2}$",
+                "description": "Decimal string; never a float."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "loss_carryforward": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+\\.\\d{2}$",
+                "description": "Decimal string; never a float."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hard": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "unresolved_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resolutions": {
+      "type": "array",
+      "description": "How each unresolved field was settled.",
+      "items": {
+        "type": "object",
+        "required": [
+          "field",
+          "value",
+          "source"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "enum": [
+              "user",
+              "record"
+            ]
+          },
+          "ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

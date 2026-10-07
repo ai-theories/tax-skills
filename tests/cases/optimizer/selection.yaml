@@ -1,0 +1,50 @@
+# Which lots an adapter reaches for, where the choice is forced rather than optimal.
+- {id: select-prefers-losses-before-gains, category: selection, portfolio_ref: mixed,
+   description: "With a tight gross budget, only losses can be taken.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {sells_include: [lot_loss_big, lot_loss_small], gross_gains_at_most: "0"}}
+- {id: select-takes-the-only-eligible-lot, category: selection, portfolio_ref: unusable,
+   description: "When three lots are unusable the fourth is the only possible trade.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_exactly: [lot_ok]}}
+- id: select-extra-trades-past-the-target-are-losses
+  category: selection
+  portfolio_ref: losses_only
+  description: >
+    Harvesting may continue past the cash target, because taking a loss is
+    itself the objective. What it may not do is realize a gain nobody needed:
+    any trade beyond the target must consume no budget.
+  constraints: {cash_target: "100", gain_budget: {amount: "15000"}}
+  expect: {gross_gains_at_most: "0"}
+
+- {id: select-no-gain-realized-when-losses-suffice, category: selection,
+   portfolio_ref: mixed,
+   description: "Cash available from losses should not be raised by realizing a gain.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {gross_gains_at_most: "0"}}
+- {id: select-all-lots-when-target-needs-them, category: selection, portfolio_ref: mixed,
+   description: "A target equal to the whole portfolio requires every eligible lot.",
+   constraints: {cash_target: "34200", gain_budget: {amount: "15000"}},
+   expect: {trade_count: 4, cash_at_least: "34200"}}
+- {id: select-restricted-lot-forces-the-alternative, category: selection,
+   portfolio_ref: losses_only,
+   description: "Restricting the larger loss forces the smaller one to be used.",
+   constraints: {cash_target: "7000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [BBB]}]},
+   expect: {sells_exactly: [lot_loss_small]}}
+- {id: select-washed-lot-forces-the-alternative, category: selection, portfolio_ref: washed,
+   description: "A washed lot is withheld, so the other loss lot carries the target.",
+   constraints: {cash_target: "7000", gain_budget: {amount: "15000"}},
+   expect: {sells_exactly: [lot_loss_small]}}
+- {id: select-nothing-to-do-is-a-valid-answer, category: selection, portfolio_ref: gains_only,
+   description: "A zero target with gains only means no trade is the right answer.",
+   constraints: {cash_target: "0", gain_budget: {amount: "15000"}},
+   expect: {trade_count: 0}}
+- {id: select-harvest-without-a-cash-target, category: selection, portfolio_ref: losses_only,
+   description: "With no cash objective the losses are still worth harvesting.",
+   constraints: {gain_budget: {amount: "15000"}},
+   expect: {losses_at_most: "0"}}
+- {id: select-gain-lot-only-when-required, category: selection, portfolio_ref: mixed,
+   description: "A target beyond the losses requires reaching into the gains.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"}},
+   expect: {net_gain_at_least: "-6800", cash_at_least: "20000"}}

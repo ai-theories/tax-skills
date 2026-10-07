@@ -1,0 +1,235 @@
+# Engine coverage. A capability is only listed when a reference test proves it.
+# Coverage is keyed by scope, asset class, jurisdiction and tax year: an engine
+# that handles US federal equity lots for 2026 has not been shown to handle a
+# municipal bond, a K-1, or a 2024 return.
+schema_version: "1.0"
+engines:
+  - engine_id: rule-based-harvest-selector
+    version: "1.0.0"
+    kind: selector
+    status: implemented
+    scopes: [account]
+    asset_classes: [US_EQUITY, US_ETF]
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: false
+    reference_tests:
+      - tests/test_harvest_selector.py::test_respects_gain_budget
+      - tests/test_harvest_selector.py::test_skips_lots_with_replacement_in_window
+    limitations:
+      - Greedy selection; no optimality claim.
+      - No multi-period or risk-aware objective.
+
+  - engine_id: oracle-account-adapter
+    version: "1.0.0"
+    kind: optimizer
+    status: implemented
+    scopes: [account]
+    asset_classes: [US_EQUITY, US_ETF]
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: true
+    engine_build: exact-solver/1.0.0
+    reference_tests:
+      - tests/test_exact_solver.py::test_matches_brute_force_on_random_instances
+      - tests/test_exact_solver.py::test_a_reported_optimum_is_really_feasible
+      - tests/test_exact_solver.py::test_optimal_is_only_claimed_when_the_search_exhausted
+      - tests/test_engines.py::test_the_oracle_beats_the_greedy_selector_where_it_should
+      - tests/test_engines.py::test_an_unconfigured_adapter_refuses
+    limitations:
+      - >-
+        Optimal means optimal over the lots, prices and constraints supplied,
+        for the stated objective: reach the cash target, realize as little gain
+        as possible, use as few trades as possible. It is not a statement about
+        what the account should do.
+      - >-
+        Risk, tracking error, a client's view on a position and the reason a lot
+        was bought are outside the model entirely.
+      - >-
+        Beyond 40 budget-consuming lots the search is not exhausted. The status
+        degrades to feasible and a gap is reported; optimality is never claimed
+        from a truncated search.
+      - Account scope only. Running it once per account is not a household optimum.
+
+  - engine_id: household-coordinator
+    version: "1.0.0"
+    kind: coordinator
+    status: implemented
+    scopes: [household_coordinated]
+    asset_classes: [US_EQUITY, US_ETF]
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: false
+    reference_tests:
+      - tests/test_coordinator.py::test_shared_budget_is_not_double_spent
+      - tests/test_coordinator.py::test_sleeve_cannot_wash_another_sleeves_loss
+      - tests/test_coordinator.py::test_allocation_order_is_recorded
+    limitations:
+      - Sequential allocation. Results depend on the declared unit order and are
+        not a joint optimum.
+      - Budgets are allocated per tax unit; a household spanning several tax
+        units gets several budgets, never one.
+      - Cross-unit wash-sale prevention covers accounts in scope and planned
+        purchases supplied with the request. Unseen accounts and unreported
+        manager intentions remain outside it.
+
+  - engine_id: household-optimizer
+    version: "1.0.0"
+    kind: optimizer
+    status: implemented
+    scopes: [household]
+    asset_classes: [US_EQUITY, US_ETF]
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: true
+    reference_tests:
+      - tests/test_engines.py::test_the_household_decomposition_matches_one_joint_solve
+      - tests/test_engines.py::test_budgets_are_never_pooled_across_tax_units
+      - tests/test_engines.py::test_joint_is_never_worse_than_sequential
+      - tests/test_exact_solver.py::test_matches_brute_force_on_random_instances
+    limitations:
+      - >-
+        Solved per tax unit and summed. That decomposition is exact, not an
+        approximation: a gain budget belongs to one taxpayer, so no selection in
+        one unit changes what is available in another and the objective is
+        additive. A household spanning several tax units still gets several
+        budgets and never one pooled allowance.
+      - >-
+        Wash-sale scope follows the taxpayer and is handled before the solve, by
+        excluding lots whose loss would be disallowed. Accounts outside the
+        snapshot remain unseen.
+      - >-
+        Optimality is over the supplied lots and constraints. It says nothing
+        about which account should hold which exposure, which is an allocation
+        decision this engine does not make.
+      - >-
+        Beyond 40 budget-consuming lots in a tax unit the search is not
+        exhausted and the status degrades to feasible with a reported gap.
+
+  - engine_id: rebalance-engine
+    version: "1.0.0"
+    kind: rebalancer
+    status: implemented
+    scopes: [account]
+    asset_classes: [US_EQUITY, US_ETF]
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: true
+    reference_tests:
+      - tests/test_engines.py::test_rebalancing_never_increases_drift
+      - tests/test_engines.py::test_rebalancing_never_sells_past_target
+      - tests/test_engines.py::test_a_buy_that_would_wash_a_recent_loss_is_withheld
+      - tests/test_engines.py::test_rebalancing_respects_the_gain_budget
+    limitations:
+      - >-
+        Drift is the sum of absolute differences between current and target
+        weight. The engine never sells more of a security than its overweight,
+        so with chunky lots it under-trades rather than overshooting, and
+        residual drift is expected and reported.
+      - >-
+        Buys are allocated across underweight securities in proportion to their
+        shortfall. A purchase has no tax consequence, so there is nothing to
+        optimise about which lot it becomes.
+      - >-
+        A buy is withheld when the security was sold at a loss inside the
+        wash-sale window, which leaves that drift open until the window closes.
+      - >-
+        Requires advisor-supplied target weights. Inferring a target from the
+        current holdings would make the portfolio its own benchmark.
+      - >-
+        Account scope only, and no view on transaction costs, market impact,
+        tracking error or which account should hold which exposure.
+
+  - engine_id: federal-income-estimator
+    version: "1.0.0"
+    kind: income_estimator
+    # Not a portfolio engine. It takes figures the caller supplies and returns
+    # the tax on those figures, so its scope is the inputs, not an account.
+    # Deliberately a different kind from tax_calculator: nothing in a portfolio
+    # workflow may satisfy a return-level requirement by reaching for this.
+    status: implemented
+    scopes: [supplied_figures]
+    asset_classes: []
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: false
+    reference_tests:
+      - tests/test_federal.py::test_gain_straddling_the_zero_band_is_split_not_rounded_up
+      - tests/test_federal.py::test_summary_combines_the_pieces_and_pins_its_rules
+      - tests/test_federal.py::test_uncovered_tax_year_is_refused_not_guessed
+      - tests/test_cli.py::test_amt_command
+      - tests/test_cli.py::test_qbi_sstb_flag_changes_the_answer
+      - tests/test_source_verification.py::test_ordinary_brackets_match_the_revenue_procedure
+    limitations:
+      - Computes ordinary tax, preferential-rate tax on long-term gains, NIIT,
+        AMT, the section 199A deduction and the capital loss deduction. Each is
+        exact over the figures given.
+      - These do not compose into a return. AMT and QBI are computed separately
+        and are not folded into one liability; credits, self-employment tax,
+        the additional Medicare tax, phase-outs other than those named, state
+        and local tax, and any non-2026 year are outside it.
+      - Figures transcribed from Rev. Proc. 2025-32 and verified line by line
+        on 2026-10-05. The methodology built on those figures has not been
+        reviewed by a tax professional.
+      - >-
+        Not bound into the analysis workflow: a harvest or coordination run
+        reports gains and losses, never tax dollars.
+
+  - engine_id: tax-liability-engine
+    version: none
+    kind: tax_calculator
+    status: unavailable
+    scopes: []
+    asset_classes: []
+    jurisdictions: []
+    tax_years: []
+    reference_tests: []
+    limitations:
+      - No return-level liability engine is bound. A portfolio run produces gain
+        and loss amounts only; it never states the tax on them.
+      - >-
+        What exists instead is federal-income-estimator, which computes tax on
+        figures a caller supplies. It is not wired into a run and does not
+        assemble a return, so it cannot answer what a given harvest costs in
+        tax without a human carrying the figures across.
+
+  - engine_id: municipal-bond-engine
+    version: "1.0.0"
+    kind: income_estimator
+    # Takes figures the caller supplies: a yield, a price, a rate. It holds no
+    # client data and reads no security master, so it cannot tell whether a
+    # bond is a private activity bond or what a state charges.
+    status: implemented
+    scopes: [supplied_figures]
+    asset_classes: []
+    jurisdictions: [US_FEDERAL]
+    tax_years: [2026]
+    claims_optimality: false
+    reference_tests:
+      - tests/test_municipal.py::test_the_naive_formula_understates_for_a_high_earner
+      - tests/test_municipal.py::test_a_discount_above_the_threshold_is_ordinary_income
+      - tests/test_municipal.py::test_premium_on_a_tax_exempt_bond_buys_no_deduction
+      - tests/test_source_verification_muni.py::test_the_de_minimis_fraction_matches_the_statute
+    limitations:
+      - >-
+        Computes a taxable-equivalent yield, the de minimis market discount
+        test and mandatory premium amortization. Each is exact over the figures
+        given.
+      - >-
+        Whether a bond is a private activity bond is supplied by the caller. It
+        decides whether the interest is an AMT preference, and getting it wrong
+        reverses the answer for a taxpayer in AMT.
+      - >-
+        No state's treatment is looked up. The holder's state rate and whether
+        the bond is exempt in their state both come from the caller.
+      - >-
+        Original issue discount accrual and the constant-yield premium schedule
+        are not computed; amortization is shown straight-line, which reaches
+        the same basis at maturity.
+      - >-
+        Municipal bonds remain outside every portfolio engine. A muni lot
+        cannot be harvested, screened or rebalanced here, because accrued
+        market discount is not tracked in lot accounting.
+      - >-
+        Credit risk, call features, duration and liquidity are not modelled, so
+        a yield comparison is not a recommendation.

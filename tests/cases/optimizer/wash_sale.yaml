@@ -1,0 +1,87 @@
+# Harvesting into a wash sale converts the benefit into a disallowed loss.
+- {id: wash-existing-replacement-blocks-harvest, category: wash_sale, portfolio_ref: washed,
+   description: "A repurchase already inside the window makes that loss lot unharvestable.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big], diagnostics_include: [wash_sale_flagged]}}
+- {id: wash-other-loss-lot-remains-available, category: wash_sale, portfolio_ref: washed,
+   description: "Only the washed lot is withheld; the clean one is still sold.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_include: [lot_loss_small]}}
+- {id: wash-reason-is-reported, category: wash_sale, portfolio_ref: washed,
+   description: "A withheld harvest is reported, not silently omitted.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_mention: [WASH_SALE_RISK]}}
+- {id: wash-roth-replacement-blocks-harvest, category: wash_sale, portfolio_ref: with_roth,
+   description: "A replacement in a Roth would permanently disallow the loss, so it is withheld.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big]}}
+- {id: wash-planned-purchase-blocks-harvest, category: wash_sale, portfolio_ref: losses_only,
+   description: "A buy a manager intends but has not placed is invisible to history and must still block.",
+   planned_purchases: [{account: acct_a, security: BBB, quantity: 100,
+                        date: "2027-01-10", unit: sleeve_beta}],
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big]}}
+- {id: wash-planned-purchase-names-the-conflict, category: wash_sale, portfolio_ref: losses_only,
+   description: "A cross-unit conflict is labelled as such, not as ordinary wash-sale risk.",
+   planned_purchases: [{account: acct_a, security: BBB, quantity: 100,
+                        date: "2027-01-10", unit: sleeve_beta}],
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_mention: [CROSS_UNIT_WASH_CONFLICT]}}
+- {id: wash-planned-purchase-outside-window, category: wash_sale, portfolio_ref: losses_only,
+   description: "A planned buy beyond 30 days after the sale does not block the harvest.",
+   planned_purchases: [{account: acct_a, security: BBB, quantity: 100,
+                        date: "2027-03-01", unit: sleeve_beta}],
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_include: [lot_loss_big]}}
+- {id: wash-planned-purchase-of-another-security, category: wash_sale,
+   portfolio_ref: losses_only,
+   description: "A planned buy of a different identifier is not a replacement.",
+   planned_purchases: [{account: acct_a, security: EEE, quantity: 100,
+                        date: "2027-01-10", unit: sleeve_beta}],
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_include: [lot_loss_big]}}
+- {id: wash-does-not-block-gain-lots, category: wash_sale, portfolio_ref: mixed,
+   description: "Wash-sale rules concern losses; a gain lot is unaffected by a repurchase.",
+   planned_purchases: [{account: acct_a, security: AAA, quantity: 100,
+                        date: "2027-01-10", unit: sleeve_beta}],
+   constraints: {cash_target: "15000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: wash-blocked-lot-never-appears-in-trades, category: wash_sale, portfolio_ref: washed,
+   description: "Whatever the cash pressure, a washed lot must not be sold.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big]}}
+- {id: wash-withholding-can-make-a-target-infeasible, category: wash_sale,
+   portfolio_ref: washed,
+   description: "Withholding a washed lot may put the target out of reach, which is reported honestly.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "15000"}},
+   expect: {solver_status: infeasible}}
+- {id: wash-clean-portfolio-harvests-freely, category: wash_sale, portfolio_ref: losses_only,
+   description: "With no replacement anywhere, both loss lots are available.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "15000"}},
+   expect: {sells_include: [lot_loss_big, lot_loss_small]}}
+- id: wash-multiple-planned-purchases
+  category: wash_sale
+  portfolio_ref: losses_only
+  description: "Several planned buys each block their own security."
+  planned_purchases:
+    - {account: acct_a, security: BBB, quantity: 100, date: "2027-01-10", unit: s1}
+    - {account: acct_a, security: DDD, quantity: 200, date: "2027-01-10", unit: s2}
+  constraints: {cash_target: "8000", gain_budget: {amount: "15000"}}
+  expect: {sells_exclude: [lot_loss_big, lot_loss_small], solver_status: infeasible}
+- {id: wash-partial-planned-quantity-still-blocks, category: wash_sale,
+   portfolio_ref: losses_only,
+   description: "A planned buy smaller than the lot still matches part of it and withholds the harvest.",
+   planned_purchases: [{account: acct_a, security: BBB, quantity: 10,
+                        date: "2027-01-10", unit: s1}],
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big]}}
+- {id: wash-traditional-ira-replacement-blocks-harvest, category: wash_sale,
+   portfolio_ref: with_traditional_ira,
+   description: "Rev. Rul. 2008-5 applies to a traditional IRA exactly as to a Roth: the loss is permanently disallowed with no basis adjustment, so the lot is never harvested.",
+   constraints: {cash_target: "6200", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big], solver_status: infeasible}}
+- {id: wash-qualified-plan-replacement-blocks-harvest, category: wash_sale,
+   portfolio_ref: with_qualified_plan,
+   description: "The same permanent disallowance through an employer plan. All three retirement registrations are treated alike by the rule pack, and now all three are exercised.",
+   constraints: {cash_target: "6200", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_loss_big], solver_status: infeasible}}

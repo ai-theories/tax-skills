@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "tax-agent",
+  "displayName": "Tax Agent",
+  "version": "0.1.0",
+  "description": "Claude skills for US investment tax analysis: lot-level gain and loss, wash-sale screening across accounts and UMA sleeves, loss-harvest scenarios and federal estimates, backed by a deterministic engine and versioned rule packs. Analysis only.",
+  "author": {
+    "name": "ai-theories",
+    "url": "https://github.com/ai-theories"
+  },
+  "homepage": "https://ai-theories.github.io/tax-skills/",
+  "repository": "https://github.com/ai-theories/tax-skills",
+  "license": "Apache-2.0",
+  "keywords": ["tax", "wash-sale", "tax-loss-harvesting", "capital-gains", "uma",
+               "wealth-management", "financial-advisor", "mcp", "irs"],
+  "userConfig": {
+    "tenant_id": {
+      "type": "string",
+      "title": "Tenant ID",
+      "description": "Your firm's tenant identifier. Every record the backend reads is scoped to it.",
+      "required": true
+    },
+    "principal_id": {
+      "type": "string",
+      "title": "Principal ID",
+      "description": "Your advisor identifier, used as the authenticated caller.",
+      "required": true
+    },
+    "accounts": {
+      "type": "string",
+      "title": "Entitled accounts",
+      "description": "Comma-separated account IDs you are entitled to read. Nothing outside this list is reachable, whatever a request or a document asks for.",
+      "required": true
+    }
+  }
+}

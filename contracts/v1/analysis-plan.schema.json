@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/analysis-plan.schema.json",
+  "title": "AnalysisPlan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "template_id",
+    "subject_ref",
+    "inputs"
+  ],
+  "additionalProperties": false,
+  "description": "Selects an approved template and validated references. It cannot carry code, SQL, shell commands or expressions.",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "subject_ref": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "requested_outputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

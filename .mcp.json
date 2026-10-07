@@ -1,0 +1,100 @@
+{
+  "mcpServers": {
+    "taxagent-federal": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "federal"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-estate": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "estate"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-international": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "international"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-business": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "business"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-compliance": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "compliance"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-muni": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "muni"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-salt": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "salt"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src"
+      }
+    },
+    "taxagent-portfolio": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "portfolio"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src",
+        "TAXAGENT_TENANT_ID": "${user_config.tenant_id}",
+        "TAXAGENT_PRINCIPAL_ID": "${user_config.principal_id}",
+        "TAXAGENT_ACCOUNTS": "${user_config.accounts}"
+      }
+    },
+    "taxagent-household": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.sh",
+      "args": [
+        "--server",
+        "household"
+      ],
+      "env": {
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/src",
+        "TAXAGENT_TENANT_ID": "${user_config.tenant_id}",
+        "TAXAGENT_PRINCIPAL_ID": "${user_config.principal_id}",
+        "TAXAGENT_ACCOUNTS": "${user_config.accounts}"
+      }
+    }
+  }
+}

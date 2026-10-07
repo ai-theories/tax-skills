@@ -1,0 +1,44 @@
+# Unusable data must be excluded, never guessed at.
+- {id: data-missing-basis-is-never-sold, category: data_quality, portfolio_ref: unusable,
+   description: "A lot with unknown basis cannot be priced for tax and must not be traded.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_no_basis]}}
+- {id: data-missing-basis-is-reported, category: data_quality, portfolio_ref: unusable,
+   description: "The exclusion is visible in diagnostics rather than silent.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_mention: [MISSING_BASIS]}}
+- {id: data-missing-acquisition-date-is-never-sold, category: data_quality,
+   portfolio_ref: unusable,
+   description: "Without an acquisition date the holding period is undeterminable.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_no_date]}}
+- {id: data-missing-price-is-never-sold, category: data_quality, portfolio_ref: unusable,
+   description: "A lot with no supplied price cannot have proceeds computed.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_exclude: [lot_no_price]}}
+- {id: data-missing-price-is-reported, category: data_quality, portfolio_ref: unusable,
+   description: "A missing price is a data gap worth naming.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {diagnostics_mention: [PRICE_UNAVAILABLE]}}
+- {id: data-usable-lot-still-trades, category: data_quality, portfolio_ref: unusable,
+   description: "Bad neighbours do not disqualify the one sound lot.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {sells_include: [lot_ok], solver_status: feasible}}
+- {id: data-all-unusable-is-infeasible, category: data_quality, portfolio_ref: unusable,
+   description: "When only unusable lots could meet the target, the run is infeasible.",
+   constraints: {cash_target: "14000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: infeasible}}
+- {id: data-unusable-lots-do-not-count-toward-cash, category: data_quality,
+   portfolio_ref: unusable,
+   description: "Excluded lots contribute nothing to the proceeds figure.",
+   constraints: {cash_target: "6200", gain_budget: {amount: "15000"}},
+   expect: {cash_at_most: "6200"}}
+- {id: data-no-price-for-any-lot, category: data_quality, portfolio_ref: mixed,
+   description: "With no prices at all nothing can be valued, so nothing is proposed.",
+   prices: {},
+   constraints: {cash_target: "1000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: data-blocked-lots-never-reach-the-trade-list, category: data_quality,
+   portfolio_ref: unusable,
+   description: "The invariant battery rejects any trade against an unusable lot.",
+   constraints: {gain_budget: {amount: "15000"}}, expect: {}}

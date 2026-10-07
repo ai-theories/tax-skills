@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/common.schema.json",
+  "title": "Common definitions",
+  "$defs": {
+    "money": {
+      "type": "string",
+      "pattern": "^-?\\d+\\.\\d{2}$",
+      "description": "Decimal string; never a float."
+    },
+    "nullableMoney": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^-?\\d+\\.\\d{2}$",
+          "description": "Decimal string; never a float."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null means unknown, never zero."
+    },
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.\\d+$"
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Opaque identifier. Never a human-readable client name."
+    },
+    "isoDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocking",
+            "limiting",
+            "info"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "refs": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

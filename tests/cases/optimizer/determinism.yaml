@@ -1,0 +1,27 @@
+# Same inputs, same trades. Replay depends on it.
+- {id: determinism-mixed-portfolio, kind: determinism, category: determinism,
+   portfolio_ref: mixed,
+   description: "Two independent solves of one problem must produce identical trades.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"}}, expect: {}}
+- {id: determinism-tight-budget, kind: determinism, category: determinism,
+   portfolio_ref: mixed,
+   description: "A binding budget must not introduce run-to-run variation.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {}}
+- {id: determinism-infeasible-run, kind: determinism, category: determinism,
+   portfolio_ref: mixed,
+   description: "Even a failing run must fail the same way each time.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}}, expect: {}}
+- {id: determinism-with-restrictions, kind: determinism, category: determinism,
+   portfolio_ref: mixed,
+   description: "Restrictions must not make tie-breaking order dependent.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA]}]}, expect: {}}
+- {id: determinism-with-wash-screening, kind: determinism, category: determinism,
+   portfolio_ref: washed,
+   description: "Wash-sale probing must not vary between runs.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"}}, expect: {}}
+- {id: determinism-equal-value-lots, kind: determinism, category: determinism,
+   portfolio_ref: efficiency,
+   description: "Lots of similar appeal need a declared tie-break, not an arbitrary one.",
+   constraints: {cash_target: "15000", gain_budget: {amount: "15000"}}, expect: {}}

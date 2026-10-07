@@ -1,0 +1,44 @@
+# Infeasible means infeasible. Constraints are never quietly relaxed.
+- {id: infeasible-reports-status, category: infeasibility, portfolio_ref: mixed,
+   description: "An unreachable target yields the infeasible status, not a partial success.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}},
+   expect: {solver_status: infeasible}}
+- {id: infeasible-still-conserves, category: infeasibility, portfolio_ref: mixed,
+   description: "Even when failing, the partial trade list must remain valid.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}}, expect: {}}
+- {id: infeasible-does-not-breach-the-budget, category: infeasibility, portfolio_ref: mixed,
+   description: "Falling short is preferable to exceeding a hard budget.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "1000"}}
+- {id: infeasible-does-not-breach-restrictions, category: infeasibility, portfolio_ref: mixed,
+   description: "A restriction is not relaxed to close a shortfall.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA]}]},
+   expect: {sells_exclude: [lot_gain_big]}}
+- {id: infeasible-reports-the-shortfall, category: infeasibility, portfolio_ref: mixed,
+   description: "The gap between target and achievable cash is quantified.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}},
+   expect: {diagnostics_include: [cash_shortfall]}}
+- {id: infeasible-explains-itself, category: infeasibility, portfolio_ref: mixed,
+   description: "A reason accompanies the status so a person can act on it.",
+   constraints: {cash_target: "100000", gain_budget: {amount: "100000"}},
+   expect: {diagnostics_include: [infeasibility_reason]}}
+- {id: infeasible-empty-portfolio, category: infeasibility, portfolio_ref: empty,
+   description: "No holdings and a positive target is infeasible, not an exception.",
+   constraints: {cash_target: "1", gain_budget: {amount: "15000"}},
+   expect: {solver_status: infeasible, trade_count: 0}}
+- {id: infeasible-everything-restricted, category: infeasibility, portfolio_ref: mixed,
+   description: "A fully restricted portfolio cannot raise a cent.",
+   constraints: {cash_target: "1", gain_budget: {amount: "15000"},
+                 restrictions: [{code: FROZEN, accounts: [acct_a]}]},
+   expect: {solver_status: infeasible}}
+- {id: infeasible-zero-budget-blocks-the-only-cash, category: infeasibility,
+   portfolio_ref: gains_only,
+   description: "When all cash sits behind gains a zero budget makes the target unreachable.",
+   constraints: {cash_target: "5000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {solver_status: infeasible, gross_gains_at_most: "0"}}
+- {id: infeasible-feasible-when-target-lowered, category: infeasibility,
+   portfolio_ref: losses_only,
+   description: "The same portfolio succeeds once the target is within reach, proving the refusal was about the constraint.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {solver_status: feasible}}

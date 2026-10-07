@@ -1,0 +1,35 @@
+# Account-scope optimization, as distinct from greedy selection.
+#
+# harvest-review.v1 runs the rule-based selector: fast, deterministic, and
+# making no optimality claim. This runs the bound optimizer, which proves
+# optimality where the search exhausts and reports a gap where it does not.
+# Both templates exist because they make different claims.
+id: account-optimize.v1
+mode: analysis_only
+required_scope: account
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+  - id: constraints
+    operation: compile_constraints
+    requires: [lot_check]
+  - id: optimize
+    operation: select_account_optimally
+    requires: [constraints]
+  - id: gain_loss
+    operation: calculate_gain_loss
+    requires: [optimize]
+  - id: wash_sale
+    operation: screen_wash_sales
+    requires: [gain_loss]
+  - id: validation
+    operation: validate_scenario
+    requires: [wash_sale]
+  - id: evidence
+    operation: build_evidence_pack
+    requires: [validation]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/constraint-set.schema.json",
+  "title": "ConstraintSet",
+  "type": "object",
+  "required": [
+    "constraints_ref",
+    "subject_id"
+  ],
+  "properties": {
+    "constraints_ref": {
+      "type": "string"
+    },
+    "subject_id": {
+      "type": "string"
+    },
+    "cash_target": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^-?\\d+\\.\\d{2}$",
+          "description": "Decimal string; never a float."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "null means unknown, never zero."
+    },
+    "withdrawal_account_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "gain_budget": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "amount",
+            "netting_basis",
+            "period"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "realized_gain_budget",
+                "tax_dollar_budget"
+              ]
+            },
+            "amount": {
+              "type": "string",
+              "pattern": "^-?\\d+\\.\\d{2}$",
+              "description": "Decimal string; never a float."
+            },
+            "currency": {
+              "type": "string"
+            },
+            "netting_basis": {
+              "enum": [
+                "gross_gains",
+                "net_gains"
+              ]
+            },
+            "period": {
+              "type": "string"
+            },
+            "external_realized": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?\\d+\\.\\d{2}$",
+                  "description": "Decimal string; never a float."
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "null means unknown, never zero."
+            },
+            "loss_carryforward": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?\\d+\\.\\d{2}$",
+                  "description": "Decimal string; never a float."
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "null means unknown, never zero."
+            },
+            "hard": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "restrictions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "lot_selection_method": {
+      "enum": [
+        "SPECIFIC",
+        "FIFO",
+        "LIFO",
+        "HIFO",
+        "MAX_LOSS"
+      ]
+    },
+    "rule_bundle_ref": {
+      "type": "string"
+    }
+  }
+}

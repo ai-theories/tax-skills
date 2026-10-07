@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/tool-request.schema.json",
+  "title": "ToolRequest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "operation",
+    "request_id",
+    "idempotency_key"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "snapshot_ref": {
+      "type": "string"
+    },
+    "target_ref": {
+      "type": "string"
+    },
+    "constraint_set_ref": {
+      "type": "string"
+    },
+    "rule_bundle_ref": {
+      "type": "string"
+    },
+    "idempotency_key": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,73 @@
+# Federal filing-compliance and penalty parameters for returns filed in 2027
+# (that is, for the 2026 tax year).
+schema_version: "1.0"
+bundle_id: us-federal-compliance-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-05"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-05"
+  transcription_verified_against: >-
+    Rev. Proc. 2025-32 (https://www.irs.gov/pub/irs-drop/rp-25-32.pdf),
+    sections 4.52, 4.55, 4.56 and 4.57; 26 U.S.C. sections 6651 and 6654 for
+    the statutory rates and safe harbours.
+  methodology_reviewed_by: unassigned
+  removed: >-
+    The section 6721 information-return penalties were removed: no engine
+    computes them, and an unexercised rule in a pack is a claim this
+    deployment cannot back. Re-add them with the engine, not before.
+  note: >
+    The inflation-adjusted minimums and per-return amounts were read from the
+    revenue procedure, which states them for returns required to be filed in
+    2027. The percentage rates in section 6651 and the safe-harbour
+    percentages in section 6654 are statutory and do not move.
+
+    Interest on underpayments is NOT in this pack. The rate is set quarterly
+    under section 6621 and compounds daily; a figure recorded here would be
+    stale within three months, so the engine refuses to compute interest
+    rather than quoting a rate that may have changed.
+
+rules:
+  failure_to_file:
+    authority: "IRC 6651(a)(1), (c)(1); Rev. Proc. 2025-32 sec. 4.52"
+    legal_effective_from: "2026-01-01"
+    value:
+      monthly_rate: "0.05"
+      maximum_rate: "0.25"
+      # Section 6651(c)(1) reduces this rate by the failure-to-pay rate for any
+      # month both apply. That is a rule, not a figure, so it is implemented in
+      # the engine rather than stored as a parameter here.
+      minimum_after_60_days: "535"
+
+  failure_to_pay:
+    authority: "IRC 6651(a)(2), (a)(3)"
+    legal_effective_from: "2026-01-01"
+    value:
+      monthly_rate: "0.005"
+      maximum_rate: "0.25"
+
+  estimated_tax_safe_harbour:
+    authority: "IRC 6654(d)(1)"
+    legal_effective_from: "2026-01-01"
+    value:
+      current_year_fraction: "0.90"
+      prior_year_fraction: "1.00"
+      prior_year_fraction_high_income: "1.10"
+      high_income_agi_threshold: "150000"
+      high_income_agi_threshold_mfs: "75000"
+
+  partnership_late_filing:
+    authority: "IRC 6698(b)(1); Rev. Proc. 2025-32 sec. 4.55"
+    legal_effective_from: "2026-01-01"
+    value:
+      per_partner_month: "260"
+      maximum_months: "12"
+
+  s_corporation_late_filing:
+    authority: "IRC 6699(b)(1); Rev. Proc. 2025-32 sec. 4.56"
+    legal_effective_from: "2026-01-01"
+    value:
+      per_shareholder_month: "260"
+      maximum_months: "12"
+

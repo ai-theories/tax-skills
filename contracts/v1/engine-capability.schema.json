@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/engine-capability.schema.json",
+  "title": "EngineCapability",
+  "type": "object",
+  "required": [
+    "engine_id",
+    "status",
+    "scopes",
+    "asset_classes",
+    "jurisdictions",
+    "tax_years"
+  ],
+  "description": "A capability with no reference_tests must not be advertised as implemented.",
+  "properties": {
+    "engine_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "implemented",
+        "not_configured",
+        "unavailable"
+      ]
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "account",
+          "household_coordinated",
+          "household",
+          "supplied_figures"
+        ],
+        "description": "What the engine operates on. 'household_coordinated' and 'household' are different claims: the first is sequential and order-dependent, the second is joint. 'supplied_figures' holds no client data at all."
+      }
+    },
+    "asset_classes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "jurisdictions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tax_years": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "claims_optimality": {
+      "type": "boolean"
+    },
+    "reference_tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

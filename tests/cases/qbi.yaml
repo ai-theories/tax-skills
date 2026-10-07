@@ -1,0 +1,111 @@
+# Section 199A. The limits interact, so each case pins one interaction.
+
+- id: qbi-below-threshold-no-limits
+  rules: [qbi]
+  description: >
+    Below the threshold neither the wage limit nor the service-business
+    restriction applies. 20% of 200,000 is 40,000.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "350000",
+          filing_status: MFJ, w2_wages: "0"}
+  expect: {deduction: "40000.00", limit_applied: none_below_threshold}
+
+- id: qbi-sstb-unrestricted-below-threshold
+  rules: [qbi]
+  description: A service business below the threshold is treated like any other.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "350000",
+          filing_status: MFJ, w2_wages: "0", is_sstb: true}
+  expect: {deduction: "40000.00", limit_applied: none_below_threshold}
+
+- id: qbi-wage-limit-above-the-range
+  rules: [qbi]
+  description: >
+    Fully phased in, the wage limit binds: 50% of 50,000 wages is 25,000,
+    below the 40,000 tentative deduction.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "600000",
+          filing_status: MFJ, w2_wages: "50000"}
+  expect:
+    deduction: "25000.00"
+    wage_and_property_limit: "25000.00"
+    limit_applied: wage_and_property_limit
+
+- id: qbi-ubia-alternative-beats-wages-alone
+  rules: [qbi]
+  description: >
+    25% of wages plus 2.5% of property can exceed half the wages where a
+    business is capital heavy: 5,000 + 50,000 = 55,000 beats 10,000.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "600000",
+          filing_status: MFJ, w2_wages: "20000", ubia: "2000000"}
+  expect: {wage_and_property_limit: "55000.00", deduction: "40000.00"}
+
+- id: qbi-wage-limit-phases-in-not-switches-on
+  rules: [qbi]
+  description: >
+    Halfway through the 150,000 MFJ range only half the excess over the limit
+    is removed. Tentative 40,000, limit 25,000, ratio 0.5, so the reduction is
+    7,500 and the deduction is 32,500.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "478500",
+          filing_status: MFJ, w2_wages: "50000"}
+  expect:
+    phase_in_ratio: "50.0%"
+    deduction: "32500.00"
+    limit_applied: wage_limit_phasing_in
+
+- id: qbi-sstb-fully-phased-out
+  rules: [qbi]
+  description: >
+    A specified service business above the range gets nothing on that income,
+    and the new minimum deduction is not applied because no QBI is taken into
+    account. That interaction is unsettled and is flagged for review.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "600000",
+          filing_status: MFJ, w2_wages: "50000", is_sstb: true}
+  expect: {deduction: "0.00", limit_applied: sstb_fully_phased_out}
+  expect_contains: {"notes[1]": unsettled}
+
+- id: qbi-sstb-partial-phase-out
+  rules: [qbi]
+  description: >
+    At 51% through the range the applicable percentage is 49%. QBI, wages and
+    property are all reduced, then the wage limit phases in on top.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "480000",
+          filing_status: MFJ, w2_wages: "50000", is_sstb: true}
+  expect:
+    phase_in_ratio: "51.0%"
+    deduction: "15851.50"
+    limit_applied: sstb_partial_phase_out
+
+- id: qbi-capped-by-taxable-income-less-gains
+  rules: [qbi, capital_gain_brackets]
+  description: >
+    The overall cap is 20% of taxable income less net capital gain. With
+    150,000 of the 200,000 taxable income being gain, the cap is 10,000.
+  calc: qbi
+  given: {qualified_business_income: "200000", taxable_income: "200000",
+          filing_status: MFJ, net_capital_gain: "150000"}
+  expect: {taxable_income_limit: "10000.00", deduction: "10000.00",
+           limit_applied: taxable_income_limit}
+
+- id: qbi-minimum-deduction-for-small-active-business
+  rules: [qbi]
+  description: >
+    Above the range with no wages the limit would be zero, but at least 1,000
+    of active QBI secures the 400 minimum.
+  calc: qbi
+  given: {qualified_business_income: "20000", taxable_income: "600000",
+          filing_status: MFJ, w2_wages: "0"}
+  expect: {deduction: "400.00", limit_applied: minimum_deduction}
+
+- id: qbi-single-threshold-is-half-of-mfj
+  rules: [qbi]
+  description: A single filer is fully phased in by 276,750.
+  calc: qbi
+  given: {qualified_business_income: "100000", taxable_income: "300000",
+          filing_status: SINGLE, w2_wages: "30000"}
+  expect: {threshold: "201750.00", phase_in_ratio: "100.0%",
+           deduction: "15000.00"}

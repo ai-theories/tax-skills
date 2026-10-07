@@ -1,0 +1,114 @@
+# Federal estate, gift and fiduciary income. Every figure below was computed by
+# hand from the statute and the revenue procedure before the engine was run.
+
+- id: estate-within-the-exclusion-owes-nothing
+  rules: [basic_exclusion_amount, estate_gift_rate_schedule]
+  description: >
+    A 12,000,000 estate sits under the 15,000,000 exclusion, so the credit
+    covers the whole tentative tax.
+  calc: estate_tax
+  given: {gross_estate: "12000000"}
+  expect: {estate_tax: "0.00", exclusion_available: "15000000.00"}
+
+- id: estate-lifetime-gifts-are-added-back-not-subtracted
+  rules: [basic_exclusion_amount, estate_gift_rate_schedule]
+  description: >
+    Taxable estate 19,500,000 plus 2,000,000 of lifetime gifts is a 21,500,000
+    base. Tentative 345,800 + 40% x 20,500,000 = 8,545,800. Credit on the
+    15,000,000 exclusion is 345,800 + 40% x 14,000,000 = 5,945,800. Tax is the
+    difference, 2,600,000.
+  calc: estate_tax
+  given:
+    gross_estate: "20000000"
+    deductions: "500000"
+    lifetime_taxable_gifts: "2000000"
+  expect:
+    taxable_estate: "19500000.00"
+    tentative_tax: "8545800.00"
+    credit_for_exclusion: "5945800.00"
+    estate_tax: "2600000.00"
+
+- id: estate-portability-doubles-the-shelter
+  rules: [basic_exclusion_amount, estate_gift_rate_schedule]
+  description: >
+    A deceased spouse's unused exclusion of 15,000,000 raises the available
+    exclusion to 30,000,000, which covers a 28,000,000 estate entirely.
+  calc: estate_tax
+  given: {gross_estate: "28000000", dsue_amount: "15000000"}
+  expect: {exclusion_available: "30000000.00", estate_tax: "0.00"}
+
+- id: estate-lowest-bracket-is-reached-only-without-the-credit
+  rules: [estate_gift_rate_schedule]
+  description: >
+    With no exclusion consumed by gifts, a 15,010,000 estate has 10,000 above
+    the exclusion. Tentative on 15,010,000 is 345,800 + 40% x 14,010,000 =
+    5,949,800; credit is 5,945,800; tax is 4,000, which is the 40% top rate
+    applied to the 10,000 of excess.
+  calc: estate_tax
+  given: {gross_estate: "15010000"}
+  expect: {estate_tax: "4000.00"}
+
+- id: gift-single-donor-single-recipient
+  rules: [annual_gift_exclusion]
+  description: >
+    One donor to one recipient: 19,000 of a 25,000 gift is covered by the
+    annual exclusion and 6,000 is a taxable gift.
+  calc: gift_exclusion
+  given: {gift_amount: "25000"}
+  expect:
+    total_annual_exclusion: "19000.00"
+    covered_by_annual_exclusion: "19000.00"
+    taxable_gift: "6000.00"
+
+- id: gift-splitting-doubles-the-exclusion
+  rules: [annual_gift_exclusion]
+  description: Two donors, one recipient, so 38,000 of a 50,000 gift is covered.
+  calc: gift_exclusion
+  given: {gift_amount: "50000", donors: 2}
+  expect: {total_annual_exclusion: "38000.00", taxable_gift: "12000.00"}
+
+- id: gift-to-three-children-from-two-parents
+  rules: [annual_gift_exclusion]
+  description: 19,000 x 3 recipients x 2 donors is 114,000, covering a 100,000 gift.
+  calc: gift_exclusion
+  given: {gift_amount: "100000", recipients: 3, donors: 2}
+  expect: {total_annual_exclusion: "114000.00", taxable_gift: "0.00"}
+
+- id: gift-to-noncitizen-spouse-uses-its-own-figure
+  rules: [noncitizen_spouse_gift_exclusion]
+  description: >
+    The unlimited marital deduction does not apply, so a separate and much
+    larger annual figure of 194,000 governs.
+  calc: gift_exclusion
+  given: {gift_amount: "250000", noncitizen_spouse: true}
+  expect:
+    annual_exclusion_per_recipient: "194000.00"
+    taxable_gift: "56000.00"
+    exclusion_is_noncitizen_spouse: true
+
+- id: fiduciary-reaches-the-top-rate-at-sixteen-thousand
+  rules: [fiduciary_brackets]
+  description: >
+    20,000 of ordinary income: 10% x 3,300 = 330, 24% x 8,400 = 2,016,
+    35% x 4,300 = 1,505, 37% x 4,000 = 1,480. Total 5,331.
+  calc: fiduciary_tax
+  given: {ordinary_income: "20000"}
+  expect: {ordinary_tax: "5331.00", top_rate_reached_at: "16000.00"}
+
+- id: fiduciary-gain-stacks-on-ordinary-income
+  rules: [fiduciary_brackets, fiduciary_capital_gain_brackets]
+  description: >
+    With 20,000 of ordinary income the stack is already past the 16,250
+    fifteen-percent ceiling, so the whole 10,000 gain is taxed at 20%.
+  calc: fiduciary_tax
+  given: {ordinary_income: "20000", long_term_gain: "10000"}
+  expect: {capital_gain_tax: "2000.00", total_tax: "7331.00"}
+
+- id: fiduciary-small-gain-falls-in-the-zero-band
+  rules: [fiduciary_capital_gain_brackets]
+  description: >
+    With 1,000 of ordinary income a 2,000 gain stacks to 3,000, still inside
+    the 3,300 zero-rate ceiling, so no tax on the gain at all.
+  calc: fiduciary_tax
+  given: {ordinary_income: "1000", long_term_gain: "2000"}
+  expect: {capital_gain_tax: "0.00"}

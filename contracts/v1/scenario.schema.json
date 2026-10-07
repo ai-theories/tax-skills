@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/scenario.schema.json",
+  "title": "Scenario",
+  "type": "object",
+  "required": [
+    "trades",
+    "solver_status"
+  ],
+  "properties": {
+    "trades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "account_id",
+          "security_id",
+          "lot_id",
+          "quantity",
+          "price_per_share",
+          "side"
+        ],
+        "properties": {
+          "side": {
+            "const": "SELL"
+          },
+          "account_id": {
+            "type": "string"
+          },
+          "security_id": {
+            "type": "string"
+          },
+          "lot_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "price_per_share": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "solver_status": {
+      "enum": [
+        "optimal",
+        "feasible",
+        "infeasible",
+        "failed"
+      ]
+    },
+    "diagnostics": {
+      "type": "object"
+    },
+    "engine": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

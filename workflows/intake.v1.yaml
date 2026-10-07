@@ -1,0 +1,11 @@
+id: intake.v1
+mode: analysis_only
+required_scope: account
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

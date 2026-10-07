@@ -1,0 +1,160 @@
+# Structural investment rules, exercised through synthetic portfolios.
+
+- id: holding-period-anniversary-is-short-term
+  rules: [long_term_holding_period_years]
+  description: >
+    The period begins the day after acquisition, so a sale on the one-year
+    anniversary is short-term. Bought 2025-09-30, sold 2026-09-30.
+  portfolio:
+    as_of: "2026-09-30"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-09-30", basis: 10000}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 120, lot: lot_a}]
+  expect: {"gain_loss.dispositions[0].character": SHORT_TERM}
+
+- id: holding-period-one-day-later-is-long-term
+  rules: [long_term_holding_period_years]
+  description: One day past the anniversary crosses into long-term.
+  portfolio:
+    as_of: "2026-10-01"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-09-30", basis: 10000}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 120, lot: lot_a}]
+  expect: {"gain_loss.dispositions[0].character": LONG_TERM}
+
+- id: wash-sale-window-includes-day-thirty
+  rules: [wash_sale_window_days]
+  description: >
+    A purchase exactly 30 days after the sale is inside the window; the loss on
+    the matched shares is disallowed.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_a, security: AAA, action: BUY,
+                    date: "2026-07-15", quantity: 100, amount: 6200}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect:
+    "wash_sale.screens[0].matched_quantity": "100.000000"
+    "wash_sale.screens[0].disallowed_loss": "5800.00"
+
+- id: wash-sale-window-excludes-day-thirty-one
+  rules: [wash_sale_window_days]
+  description: One day outside the 61-day window and the loss stands in full.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_a, security: AAA, action: BUY,
+                    date: "2026-07-16", quantity: 100, amount: 6200}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect: {"wash_sale.screens[0].matched_quantity": "0.000000"}
+
+- id: wash-sale-partial-quantity-allocates-pro-rata
+  rules: [wash_sale_window_days]
+  description: 40 replacement shares against a 100-share loss disallow 40%.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_a, security: AAA, action: BUY,
+                    date: "2026-06-20", quantity: 40, amount: 2500}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect:
+    "wash_sale.screens[0].matched_quantity": "40.000000"
+    "wash_sale.screens[0].disallowed_loss": "2320.00"
+    "wash_sale.screens[0].allowed_loss_subject_to_coverage": "3480.00"
+
+- id: replacement-in-a-roth-permanently-disallows
+  rules: [permanently_disallowing_registrations]
+  description: >
+    Rev. Rul. 2008-5: a replacement bought in an IRA or Roth kills the loss
+    outright, with no basis adjustment available anywhere.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts:
+      - {id: acct_a, registration: TAXABLE}
+      - {id: acct_roth, registration: ROTH_IRA}
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_roth, security: AAA, action: BUY,
+                    date: "2026-06-20", quantity: 100, amount: 6200}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect:
+    "wash_sale.screens[0].permanently_disallowed": "5800.00"
+    "wash_sale.screens[0].matches[0].treatment": PERMANENT_DISALLOWANCE
+
+- id: replacement-in-a-taxable-account-adjusts-basis
+  rules: [permanently_disallowing_registrations]
+  description: The same facts in a taxable account defer the loss instead.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts:
+      - {id: acct_a, registration: TAXABLE}
+      - {id: acct_b, registration: TAXABLE}
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_b, security: AAA, action: BUY,
+                    date: "2026-06-20", quantity: 100, amount: 6200}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect:
+    "wash_sale.screens[0].permanently_disallowed": "0.00"
+    "wash_sale.screens[0].matches[0].treatment": BASIS_ADJUSTMENT
+
+- id: different-ticker-is-not-matched-and-not-cleared
+  rules: [replacement_matching_basis]
+  description: >
+    A different identifier is never matched, and the screen says the
+    equivalence question was not decided rather than implying safety.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_a, security: BBB, action: BUY,
+                    date: "2026-06-20", quantity: 100, amount: 6200}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect: {"wash_sale.screens[0].matched_quantity": "0.000000"}
+  expect_contains: {"wash_sale.findings": EQUIVALENCE_NOT_ASSESSED}
+
+- id: dividend-reinvestment-is-a-replacement-purchase
+  rules: [wash_sale_window_days]
+  description: A reinvested dividend is an acquisition and can wash a loss.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2025-01-02", basis: 12000}]
+    transactions: [{id: t1, account: acct_a, security: AAA,
+                    action: DIVIDEND_REINVEST, date: "2026-06-18",
+                    quantity: 3, amount: 186}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a,
+          date: "2026-06-15"}]
+  expect: {"wash_sale.screens[0].matched_quantity": "3.000000"}
+
+- id: missing-basis-blocks-rather-than-defaulting-to-zero
+  rules: [long_term_holding_period_years]
+  description: >
+    A lot with unknown basis produces a blocked disposition, not a gain
+    computed from a zero that was never in the record.
+  portfolio:
+    as_of: "2026-12-31"
+    accounts: [{id: acct_a, registration: TAXABLE}]
+    lots: [{id: lot_a, account: acct_a, security: AAA, quantity: 100,
+            acquired: "2024-01-02", basis: null, basis_source: UNKNOWN}]
+  sell: [{account: acct_a, security: AAA, quantity: 100, price: 62, lot: lot_a}]
+  expect:
+    "gain_loss.dispositions[0].blocked": true
+    "gain_loss.dispositions[0].block_code": MISSING_BASIS
+    "gain_loss.totals.net_gain": "0.00"

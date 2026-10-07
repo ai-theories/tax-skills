@@ -1,0 +1,217 @@
+# Shared synthetic portfolios and prices for the optimizer conformance suite.
+# Synthetic throughout: no real taxpayer, account or security appears here.
+#
+# Values at the shared prices below:
+#   lot_gain_big    AAA 100 @ 150 = 15,000  basis 10,000  gain  +5,000  long
+#   lot_gain_small  CCC  50 @ 100 =  5,000  basis  4,000  gain  +1,000  long
+#   lot_loss_big    BBB 100 @  62 =  6,200  basis 12,000  loss  -5,800  long
+#   lot_loss_small  DDD 200 @  40 =  8,000  basis  9,000  loss  -1,000  short
+prices:
+  AAA: "150"
+  BBB: "62"
+  CCC: "100"
+  DDD: "40"
+  EEE: "80"
+
+portfolios:
+  mixed:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_gain_big, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}
+      - {id: lot_gain_small, account: acct_a, security: CCC, quantity: 50,
+         acquired: "2019-05-01", basis: 4000}
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+      - {id: lot_loss_small, account: acct_a, security: DDD, quantity: 200,
+         acquired: "2026-03-01", basis: 9000}
+
+  gains_only:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_gain_big, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}
+      - {id: lot_gain_small, account: acct_a, security: CCC, quantity: 50,
+         acquired: "2019-05-01", basis: 4000}
+
+  losses_only:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+      - {id: lot_loss_small, account: acct_a, security: DDD, quantity: 200,
+         acquired: "2026-03-01", basis: 9000}
+
+  empty:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots: []
+
+  # Two ways to raise the same cash, one far cheaper in budget terms.
+  efficiency:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_cheap, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 14000}   # 15,000 value, gain 1,000
+      - {id: lot_dear, account: acct_a, security: CCC, quantity: 50,
+         acquired: "2020-01-10", basis: 1000}    # 5,000 value, gain 4,000
+
+  # A replacement purchase sits inside the 61-day window.
+  washed:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+      - {id: lot_loss_small, account: acct_a, security: DDD, quantity: 200,
+         acquired: "2026-03-01", basis: 9000}
+    transactions:
+      - {id: t_repurchase, account: acct_a, security: BBB, action: BUY,
+         date: "2026-12-20", quantity: 100, amount: 6200}
+
+  # Same tax unit, one taxable and one Roth.
+  with_roth:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_roth, registration: ROTH_IRA, tax_unit: tu_1}
+    lots:
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+    transactions:
+      - {id: t_roth_buy, account: acct_roth, security: BBB, action: BUY,
+         date: "2026-12-20", quantity: 100, amount: 6200}
+
+  # The same wash-sale trap in a traditional IRA rather than a Roth. Rev. Rul.
+  # 2008-5 applies to every retirement registration, and only one was tested.
+  with_traditional_ira:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_tira, registration: TRADITIONAL_IRA, tax_unit: tu_1}
+    lots:
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+    transactions:
+      - {id: t_tira_buy, account: acct_tira, security: BBB, action: BUY,
+         date: "2026-12-20", quantity: 100, amount: 6200}
+
+  # And in an employer plan.
+  with_qualified_plan:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_plan, registration: QUALIFIED_PLAN, tax_unit: tu_1}
+    lots:
+      - {id: lot_loss_big, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+    transactions:
+      - {id: t_plan_buy, account: acct_plan, security: BBB, action: BUY,
+         date: "2026-12-20", quantity: 100, amount: 6200}
+
+  # A grantor trust is taxed to the grantor, so it shares the tax unit and the
+  # budget. A non-grantor trust is its own taxpayer with its own allowance.
+  # Which one it is changes how budget is allocated, and neither was tested.
+  household_with_grantor_trust:
+    as_of: "2026-12-31"
+    subject: household_1
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_gt, registration: TRUST_GRANTOR, tax_unit: tu_1}
+    lots:
+      - {id: lot_a_gain, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}
+      - {id: lot_gt_gain, account: acct_gt, security: CCC, quantity: 50,
+         acquired: "2019-05-01", basis: 4000}
+
+  household_with_nongrantor_trust:
+    as_of: "2026-12-31"
+    subject: household_1
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_ngt, registration: TRUST_NON_GRANTOR, tax_unit: tu_trust}
+    lots:
+      - {id: lot_a_gain, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}
+      - {id: lot_ngt_gain, account: acct_ngt, security: CCC, quantity: 50,
+         acquired: "2019-05-01", basis: 4000}
+
+  # Two accounts in one tax unit, for coordinated runs.
+  household:
+    as_of: "2026-12-31"
+    subject: household_1
+    accounts:
+      - {id: acct_a, registration: TAXABLE, tax_unit: tu_1}
+      - {id: acct_b, registration: TAXABLE, tax_unit: tu_1}
+    lots:
+      - {id: lot_a_gain, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}
+      - {id: lot_b_loss, account: acct_b, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+
+  # Overweight in AAA, absent in CCC, for rebalancing.
+  drifted:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_aaa_1, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: 10000}   # 15,000 value, gain +5,000
+      - {id: lot_aaa_2, account: acct_a, security: AAA, quantity: 40,
+         acquired: "2021-01-10", basis: 5000}    #  6,000 value, gain +1,000
+      - {id: lot_bbb_1, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}   #  6,200 value, loss -5,800
+
+  # Two mid-sized lots of the overweight security. Either fits inside the
+  # overweight on its own; together they overshoot it, which is the only shape
+  # that exercises the trim.
+  drifted_splittable:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_aaa_a, account: acct_a, security: AAA, quantity: 40,
+         acquired: "2020-01-10", basis: 3000}    # 6,000 value, gain +3,000
+      - {id: lot_aaa_b, account: acct_a, security: AAA, quantity: 40,
+         acquired: "2021-01-10", basis: 3000}    # 6,000 value, gain +3,000
+      - {id: lot_bbb_1, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}   # 6,200 value, loss -5,800
+
+  # Lots that no adapter may sell.
+  unusable:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_no_basis, account: acct_a, security: AAA, quantity: 100,
+         acquired: "2020-01-10", basis: null, basis_source: UNKNOWN}
+      - {id: lot_no_date, account: acct_a, security: CCC, quantity: 50,
+         acquired: null, basis: 4000}
+      - {id: lot_no_price, account: acct_a, security: ZZZ, quantity: 10,
+         acquired: "2020-01-10", basis: 500}
+      - {id: lot_ok, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2025-01-10", basis: 12000}
+
+  # Recently bought, for minimum-holding restrictions.
+  fresh:
+    as_of: "2026-12-31"
+    subject: acct_a
+    accounts: [{id: acct_a, registration: TAXABLE, tax_unit: tu_1}]
+    lots:
+      - {id: lot_recent, account: acct_a, security: BBB, quantity: 100,
+         acquired: "2026-12-01", basis: 12000}
+      - {id: lot_seasoned, account: acct_a, security: DDD, quantity: 200,
+         acquired: "2024-01-05", basis: 9000}

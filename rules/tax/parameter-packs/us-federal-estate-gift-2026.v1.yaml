@@ -1,0 +1,85 @@
+# Federal estate, gift and fiduciary income parameters for 2026.
+#
+# The exclusion and annual-gift figures move with inflation and are reset by
+# the One Big Beautiful Bill Act; the rate schedule in section 2001(c) does
+# not move and is statutory. Both are here because an estate calculation needs
+# them together, and each carries its own authority.
+schema_version: "1.0"
+bundle_id: us-federal-estate-gift-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-05"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-05"
+  transcription_verified_against: >-
+    Rev. Proc. 2025-32 (https://www.irs.gov/pub/irs-drop/rp-25-32.pdf) for the
+    inflation-adjusted figures; 26 U.S.C. section 2001(c) for the rate schedule.
+  methodology_reviewed_by: unassigned
+  removed: >-
+    The section 2032A limit and the fiduciary AMT figures were removed: no
+    engine computes either, and keeping a verified figure that nothing reads
+    invites a later caller to assume the capability exists.
+  note: >
+    Inflation-adjusted figures were read from Rev. Proc. 2025-32 directly. The
+    section 2001(c) schedule was transcribed from the statute and checked for
+    internal consistency: every cumulative figure equals the previous one plus
+    the previous bracket's rate times its width, for all eleven brackets.
+
+    What this does NOT cover: whether a given estate's facts are handled
+    correctly. State estate and inheritance taxes, generation-skipping transfer
+    tax, portability elections and valuation discounts are outside this pack.
+
+rules:
+  basic_exclusion_amount:
+    authority: "IRC 2010(c)(3); OBBBA sec. 70106; Rev. Proc. 2025-32 sec. 3.41"
+    legal_effective_from: "2026-01-01"
+    value: "15000000"
+
+  estate_gift_rate_schedule:
+    # Statutory, not inflation-adjusted. Bands are (rate, taxable amount up to).
+    authority: "IRC 2001(c)"
+    legal_effective_from: "2013-01-01"
+    value:
+      - {rate: "0.18", up_to: "10000"}
+      - {rate: "0.20", up_to: "20000"}
+      - {rate: "0.22", up_to: "40000"}
+      - {rate: "0.24", up_to: "60000"}
+      - {rate: "0.26", up_to: "80000"}
+      - {rate: "0.28", up_to: "100000"}
+      - {rate: "0.30", up_to: "150000"}
+      - {rate: "0.32", up_to: "250000"}
+      - {rate: "0.34", up_to: "500000"}
+      - {rate: "0.37", up_to: "750000"}
+      - {rate: "0.39", up_to: "1000000"}
+      - {rate: "0.40", up_to: null}
+
+  annual_gift_exclusion:
+    authority: "IRC 2503(b); Rev. Proc. 2025-32 sec. 4.42(1)"
+    legal_effective_from: "2026-01-01"
+    value: "19000"
+
+  noncitizen_spouse_gift_exclusion:
+    authority: "IRC 2523(i)(2); Rev. Proc. 2025-32 sec. 4.42(2)"
+    legal_effective_from: "2026-01-01"
+    value: "194000"
+
+
+  fiduciary_brackets:
+    # Estates and trusts compress four brackets into $16,000 of income.
+    authority: "IRC 1(e), 1(j)(2)(E); Rev. Proc. 2025-32 Table 5"
+    legal_effective_from: "2026-01-01"
+    value:
+      - {rate: "0.10", up_to: "3300"}
+      - {rate: "0.24", up_to: "11700"}
+      - {rate: "0.35", up_to: "16000"}
+      - {rate: "0.37", up_to: null}
+
+  fiduciary_capital_gain_brackets:
+    authority: "IRC 1(h), 1(j)(5); Rev. Proc. 2025-32 sec. 3.03"
+    legal_effective_from: "2026-01-01"
+    value:
+      - {rate: "0.00", up_to: "3300"}
+      - {rate: "0.15", up_to: "16250"}
+      - {rate: "0.20", up_to: null}
+

@@ -1,0 +1,47 @@
+# Conservation: an adapter may only propose trades the portfolio can actually make.
+- {id: cons-no-lot-sold-twice, category: conservation, portfolio_ref: mixed,
+   description: "A lot may appear at most once in the trade list.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: cons-only-known-lots, category: conservation, portfolio_ref: mixed,
+   description: "Every lot sold must exist in the frozen snapshot.",
+   constraints: {cash_target: "5000", gain_budget: {amount: "15000"}}, expect: {}}
+- {id: cons-quantities-positive, category: conservation, portfolio_ref: mixed,
+   description: "A proposed quantity of zero or less is not a trade.",
+   constraints: {cash_target: "1000", gain_budget: {amount: "15000"}}, expect: {}}
+- {id: cons-empty-portfolio-yields-no-trades, category: conservation,
+   portfolio_ref: empty,
+   description: "Nothing to sell means an empty trade list, not an error.",
+   constraints: {cash_target: "1000", gain_budget: {amount: "15000"}},
+   expect: {trade_count: 0, solver_status: infeasible}}
+- {id: cons-no-cash-target-still-conserves, category: conservation,
+   portfolio_ref: mixed,
+   description: "With no cash target the adapter may harvest, but not oversell.",
+   constraints: {gain_budget: {amount: "15000"}}, expect: {}}
+- {id: cons-proceeds-match-price-times-quantity, category: conservation,
+   portfolio_ref: losses_only,
+   description: "Recomputed proceeds must equal quantity times the supplied price.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}},
+   expect: {cash_at_least: "6000"}}
+- {id: cons-losses-only-portfolio, category: conservation, portfolio_ref: losses_only,
+   description: "A portfolio of losses raises cash without consuming any budget.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "0"}},
+   expect: {solver_status: feasible, net_gain_at_most: "0"}}
+- {id: cons-gains-only-portfolio, category: conservation, portfolio_ref: gains_only,
+   description: "A portfolio of gains can still be sold when the budget allows.",
+   constraints: {cash_target: "5000", gain_budget: {amount: "15000"}},
+   expect: {solver_status: feasible}}
+- {id: cons-zero-cash-target, category: conservation, portfolio_ref: mixed,
+   description: "A zero cash target is satisfied immediately and needs no gain.",
+   constraints: {cash_target: "0", gain_budget: {amount: "15000"}},
+   expect: {gross_gains_at_most: "0"}}
+- {id: cons-large-target-still-conserves, category: conservation, portfolio_ref: mixed,
+   description: "An unreachable target must not tempt an adapter into overselling.",
+   constraints: {cash_target: "999999", gain_budget: {amount: "15000"}},
+   expect: {solver_status: infeasible}}
+- {id: cons-no-budget-declared, category: conservation, portfolio_ref: mixed,
+   description: "With no gain budget at all the run is unconstrained but still valid.",
+   constraints: {cash_target: "5000"}, expect: {solver_status: feasible}}
+- {id: cons-single-lot-portfolio, category: conservation, portfolio_ref: with_roth,
+   description: "A one-lot portfolio is a degenerate but legal problem.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}}, expect: {}}

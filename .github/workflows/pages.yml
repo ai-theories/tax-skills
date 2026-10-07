@@ -1,0 +1,62 @@
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits rather than cancelling a deploy mid-flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # build_site.py dates the sitemap from the last commit that touched each page.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        run: python -m pip install --disable-pip-version-check 'jsonschema>=4.0' 'PyYAML>=6.0'
+
+      # A site that advertises capabilities should not ship when the engines behind
+      # them fail. The suite includes the guards that fail the build when prose
+      # anywhere in the repository contradicts the capability registry.
+      - name: Test
+        run: python -m pytest -q
+        env:
+          PYTHONPATH: src
+
+      # Publishes the generated pages only — index.html, the 404, and the search and
+      # answer-engine files (robots.txt, sitemap.xml, llms.txt, llms-full.txt) — not the
+      # whole repository. Every capability claim on the page is read from the registries
+      # at build time. See scripts/build_site.py.
+      - name: Assemble site
+        run: python scripts/build_site.py _site
+        env:
+          PYTHONPATH: src
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

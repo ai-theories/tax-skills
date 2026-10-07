@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/workflow-event.schema.json",
+  "title": "WorkflowEvent",
+  "type": "object",
+  "required": [
+    "type",
+    "seq"
+  ],
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "step_id": {
+      "type": "string"
+    },
+    "attempt": {
+      "type": "integer"
+    },
+    "operation": {
+      "type": "string"
+    },
+    "from": {
+      "type": "string"
+    },
+    "to": {
+      "type": "string"
+    },
+    "at": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "object"
+    },
+    "context_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,62 @@
+# US federal investment-tax rules applied by the calculation engines.
+#
+# Every value here is read at runtime. Nothing in src/ may hardcode one of
+# these numbers: test_rule_pack.py::test_no_tax_rule_is_hardcoded_in_source
+# fails the build if a constant reappears in the calculation path.
+#
+# Two clocks are recorded, per the blueprint's rule lifecycle:
+#   legal_effective_from  when the rule governs a taxpayer
+#   knowledge_time        when we recorded it, so a historical run reproduces
+#                         what we believed at the time, not what we know now
+schema_version: "1.0"
+bundle_id: us-federal-investment-rules.v1
+jurisdiction: US_FEDERAL
+# Structural rules, not year-adjusted parameters. Every rule below has been
+# effective since 1977 at the latest, so one pack legitimately covers several
+# years. Inflation-adjusted figures (brackets, thresholds, exclusions) are a
+# different kind of artifact and belong in year-keyed packs of their own; do
+# not add one here just because it is also a tax number.
+tax_years: [2024, 2025, 2026]
+status: reviewed
+review:
+  reviewed_by: unassigned
+  reviewed_at: null
+  note: >
+    Values are transcribed from primary sources cited per rule. A named
+    reviewer must sign off before this pack is used for client work; the
+    registry refuses packs whose status is not "reviewed".
+knowledge_time: "2026-09-28T00:00:00Z"
+
+rules:
+  wash_sale_window_days:
+    value: 30
+    legal_effective_from: "1921-01-01"
+    authority: "IRC section 1091(a)"
+    note: >
+      Days before and after the sale. The full period is 61 days: 30 before,
+      the day of sale, and 30 after.
+
+  long_term_holding_period_years:
+    value: 1
+    legal_effective_from: "1977-01-01"
+    authority: "IRC section 1222(3); Rev. Rul. 66-7"
+    note: >
+      The period begins the day after acquisition and long-term requires more
+      than one year, so a sale on the anniversary is short-term.
+
+  permanently_disallowing_registrations:
+    value: [TRADITIONAL_IRA, ROTH_IRA, QUALIFIED_PLAN]
+    legal_effective_from: "2008-01-15"
+    authority: "Rev. Rul. 2008-5"
+    note: >
+      A replacement purchased in one of these accounts permanently disallows
+      the loss: no basis adjustment is available, unlike an ordinary wash sale.
+
+  replacement_matching_basis:
+    value: exact_security_identifier
+    legal_effective_from: "1921-01-01"
+    authority: "IRC section 1091(a)"
+    note: >
+      Whether two different identifiers are substantially identical is a
+      reviewed policy question. The screener declines it rather than guessing,
+      and reports EQUIVALENCE_NOT_ASSESSED.

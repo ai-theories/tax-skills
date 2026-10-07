@@ -1,0 +1,29 @@
+id: harvest-review.v1
+mode: analysis_only
+required_scope: account
+steps:
+  - id: snapshot
+    operation: create_snapshot
+  - id: lot_check
+    operation: validate_lots
+    requires: [snapshot]
+  - id: constraints
+    operation: compile_constraints
+    requires: [lot_check]
+  - id: candidates
+    operation: select_harvest_candidates
+    requires: [constraints]
+  - id: gain_loss
+    operation: calculate_gain_loss
+    requires: [candidates]
+  - id: wash_sale
+    operation: screen_wash_sales
+    requires: [gain_loss]
+  - id: validation
+    operation: validate_scenario
+    requires: [wash_sale]
+  - id: evidence
+    operation: build_evidence_pack
+    requires: [validation]
+on_unsupported: blocked
+on_infeasible: return_diagnostics

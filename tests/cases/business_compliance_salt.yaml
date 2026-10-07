@@ -1,0 +1,222 @@
+# Section 179, entity comparison, filing penalties, the estimated tax safe
+# harbour, and the federal SALT cap.
+
+- id: section-179-under-the-threshold-is-unreduced
+  rules: [section_179]
+  description: >
+    3,000,000 of spending is below the 4,090,000 threshold, so the full
+    2,560,000 dollar limit survives and the deduction is capped by it.
+  calc: section_179
+  given: {cost_placed_in_service: "3000000"}
+  expect: {limit_after_phaseout: "2560000.00", deduction: "2560000.00"}
+
+- id: section-179-phases-out-dollar-for-dollar
+  rules: [section_179]
+  description: >
+    4,500,000 of spending is 410,000 over the threshold, so the limit falls by
+    the same 410,000 to 2,150,000. The reduction is one-for-one, not a
+    percentage.
+  calc: section_179
+  given: {cost_placed_in_service: "4500000"}
+  expect:
+    cost_over_threshold: "410000.00"
+    reduction: "410000.00"
+    limit_after_phaseout: "2150000.00"
+
+- id: section-179-disappears-entirely-with-enough-spending
+  rules: [section_179]
+  description: >
+    Spending of 6,700,000 is 2,610,000 over the threshold, more than the
+    2,560,000 limit itself, so no section 179 deduction is available at all.
+  calc: section_179
+  given: {cost_placed_in_service: "6700000"}
+  expect: {limit_after_phaseout: "0.00", deduction: "0.00"}
+
+- id: section-179-business-income-limit-carries-forward
+  rules: [section_179]
+  description: >
+    500,000 elected against 300,000 of business income: the deduction is capped
+    at income and the remaining 200,000 carries forward rather than being lost.
+  calc: section_179
+  given: {cost_placed_in_service: "500000", business_taxable_income: "300000"}
+  expect: {deduction: "300000.00", carryforward: "200000.00"}
+
+- id: entity-double-layer-against-a-top-rate-owner
+  rules: [corporate_rate]
+  description: >
+    1,000,000 at 21% is 210,000 of corporate tax, leaving 790,000. Distributed
+    in full at 20% adds 158,000, for 368,000 against 370,000 passed through at
+    37%. The corporation is ahead by 2,000, which is a narrower margin than
+    people expect.
+  calc: entity_comparison
+  given: {business_income: "1000000", owner_marginal_rate: "0.37"}
+  expect:
+    corporate_tax: "210000.00"
+    shareholder_tax_on_distribution: "158000.00"
+    total_c_corporation_tax: "368000.00"
+    passthrough_tax: "370000.00"
+    favours: "C corporation"
+
+- id: entity-retaining-earnings-defers-the-second-layer
+  rules: [corporate_rate]
+  description: >
+    The same income with nothing distributed costs only the 210,000 corporate
+    layer this year, well under the 370,000 pass-through figure. The second
+    layer is deferred, not avoided.
+  calc: entity_comparison
+  given: {business_income: "1000000", owner_marginal_rate: "0.37",
+          distribution_fraction: "0.00"}
+  expect: {total_c_corporation_tax: "210000.00", favours: "C corporation"}
+
+- id: entity-passthrough-deduction-reverses-the-comparison
+  rules: [corporate_rate]
+  description: >
+    A 200,000 section 199A deduction drops the pass-through base to 800,000,
+    taxed at 37% for 296,000, against the same 368,000 corporate total.
+  calc: entity_comparison
+  given: {business_income: "1000000", owner_marginal_rate: "0.37",
+          passthrough_deduction: "200000"}
+  expect: {passthrough_tax: "296000.00", favours: "pass-through"}
+
+- id: penalty-late-filing-is-ten-times-late-payment
+  rules: [failure_to_file, failure_to_pay]
+  description: >
+    95 days is four months. Failure-to-file runs at 5% less the 0.5%
+    failure-to-pay rate, so 4.5% x 4 x 10,000 = 1,800, plus 0.5% x 4 x 10,000
+    = 200 for failure to pay. Total 2,000.
+  calc: filing_penalty
+  given: {unpaid_tax: "10000", days_late: 95}
+  expect:
+    failure_to_file: "1800.00"
+    failure_to_pay: "200.00"
+    total_penalty: "2000.00"
+    combined_month_offset_applied: true
+
+- id: penalty-filing-on-time-without-paying-costs-far-less
+  rules: [failure_to_pay]
+  description: >
+    The same 10,000 unpaid for the same four months, but filed on time, costs
+    200 rather than 2,000. This is why filing without paying is the advice.
+  calc: filing_penalty
+  given: {unpaid_tax: "10000", days_late: 95, filed: true}
+  expect: {failure_to_file: "0.00", total_penalty: "200.00"}
+
+- id: penalty-one-day-late-is-a-whole-month
+  rules: [failure_to_file]
+  description: >
+    Any part of a month counts as a whole month, so a single day late already
+    carries 4.5% + 0.5% of the unpaid tax.
+  calc: filing_penalty
+  given: {unpaid_tax: "10000", days_late: 1}
+  expect: {months_late: 1, total_penalty: "500.00"}
+
+- id: penalty-minimum-applies-after-sixty-days
+  rules: [failure_to_file]
+  description: >
+    With only 2,000 unpaid and 95 days late, the computed failure-to-file
+    addition is 4.5% x 4 x 2,000 = 360, below the 535 floor, so the floor
+    applies instead.
+  calc: filing_penalty
+  given: {unpaid_tax: "2000", days_late: 95}
+  expect: {failure_to_file: "535.00", minimum_applied: true}
+
+- id: penalty-partnership-does-not-depend-on-tax-owed
+  rules: [partnership_late_filing]
+  description: >
+    Eight partners, four months late: 260 x 8 x 4 = 8,320, owed even by a
+    partnership with no taxable income.
+  calc: entity_penalty
+  given: {entity_type: partnership, owners: 8, months_late: 4}
+  expect: {penalty: "8320.00", months_charged: 4}
+
+- id: penalty-entity-is-capped-at-twelve-months
+  rules: [s_corporation_late_filing]
+  description: >
+    Twenty months late is charged as twelve: 260 x 3 x 12 = 9,360.
+  calc: entity_penalty
+  given: {entity_type: s_corporation, owners: 3, months_late: 20}
+  expect: {months_charged: 12, penalty: "9360.00"}
+
+- id: safe-harbour-prior-year-route-protects-a-jump-in-income
+  rules: [estimated_tax_safe_harbour]
+  description: >
+    Prior AGI of 400,000 is over the 150,000 threshold, so the prior-year route
+    is 110% x 80,000 = 88,000. The current-year route is 90% x 200,000 =
+    180,000. The smaller governs, so 88,000 protects the year.
+  calc: safe_harbour
+  given:
+    prior_year_tax: "80000"
+    current_year_projected_tax: "200000"
+    prior_year_agi: "400000"
+    withholding_and_payments: "50000"
+  expect:
+    high_income: true
+    prior_year_requirement: "88000.00"
+    current_year_requirement: "180000.00"
+    required_payment: "88000.00"
+    shortfall: "38000.00"
+
+- id: safe-harbour-lower-income-uses-one-hundred-percent
+  rules: [estimated_tax_safe_harbour]
+  description: >
+    Prior AGI of 120,000 is under the threshold, so the prior-year route is
+    100% of last year's 20,000 rather than 110%.
+  calc: safe_harbour
+  given:
+    prior_year_tax: "20000"
+    current_year_projected_tax: "60000"
+    prior_year_agi: "120000"
+  expect: {high_income: false, prior_year_requirement: "20000.00",
+           required_payment: "20000.00"}
+
+- id: safe-harbour-current-year-route-wins-when-income-falls
+  rules: [estimated_tax_safe_harbour]
+  description: >
+    Income fell, so 90% of this year's 20,000 is 18,000, below 110% of last
+    year's 90,000. Paying to last year's figure would massively overpay.
+  calc: safe_harbour
+  given:
+    prior_year_tax: "90000"
+    current_year_projected_tax: "20000"
+    prior_year_agi: "400000"
+    withholding_and_payments: "18000"
+  expect: {required_payment: "18000.00", protected: true}
+
+- id: salt-below-the-threshold-gets-the-full-cap
+  rules: [salt_cap]
+  description: >
+    MAGI of 400,000 is under the 505,000 threshold, so the full 40,400 cap
+    applies and 60,000 of tax paid is limited to it.
+  calc: salt_cap
+  given: {state_and_local_tax_paid: "60000", magi: "400000"}
+  expect: {effective_cap: "40400.00", deductible: "40400.00",
+           disallowed: "19600.00"}
+
+- id: salt-phases-down-thirty-cents-on-the-dollar
+  rules: [salt_cap]
+  description: >
+    MAGI of 550,000 is 45,000 over the threshold. At 30 cents that removes
+    13,500, leaving an effective cap of 26,900. It is a slope, not a cliff.
+  calc: salt_cap
+  given: {state_and_local_tax_paid: "60000", magi: "550000"}
+  expect: {magi_over_threshold: "45000.00", reduction: "13500.00",
+           effective_cap: "26900.00"}
+
+- id: salt-stops-falling-at-the-floor
+  rules: [salt_cap]
+  description: >
+    MAGI of 700,000 is far past the 606,333 point where the cap reaches the
+    10,000 floor, and it does not fall below it however high income goes.
+  calc: salt_cap
+  given: {state_and_local_tax_paid: "60000", magi: "700000"}
+  expect: {effective_cap: "10000.00", fully_phased_down_at: "606333.33"}
+
+- id: salt-separate-filers-get-half-of-everything
+  rules: [salt_cap]
+  description: >
+    Married filing separately halves the cap to 20,200, the threshold to
+    252,500 and the floor to 5,000.
+  calc: salt_cap
+  given: {state_and_local_tax_paid: "30000", magi: "200000", filing_status: MFS}
+  expect: {statutory_cap: "20200.00", phase_down_threshold: "252500.00",
+           effective_cap: "20200.00"}

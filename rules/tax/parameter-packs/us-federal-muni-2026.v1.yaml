@@ -1,0 +1,111 @@
+# Federal tax treatment of municipal bonds, 2026.
+#
+# Almost nothing here moves with inflation. Municipal bond taxation is rules
+# rather than figures: whether a discount is de minimis, whether premium may be
+# deducted, whether interest is an AMT preference. The one real number is the
+# de minimis fraction, and it is statutory.
+#
+# This pack covers the treatment of a bond a taxpayer already holds or is
+# considering. It does not cover any state's own treatment of its own bonds.
+schema_version: "1.0"
+bundle_id: us-federal-muni-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-06"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-06"
+  transcription_verified_against: >-
+    26 U.S.C. sections 103, 171, 1278, 1276, 57 and 1411, read at
+    law.cornell.edu on 2026-10-06. Each rule below quotes or paraphrases the
+    subsection named in its authority.
+  methodology_reviewed_by: unassigned
+  note: >
+    The de minimis fraction is quoted from section 1278(a)(2)(C): "less than
+    1/4 of 1 percent of the stated redemption price of the bond at maturity
+    multiplied by the number of complete years to maturity".
+
+    Section 171(a)(2) was read directly: "no deduction shall be allowed for the
+    amortizable bond premium" on a bond whose interest is excludable. Section
+    171(c)(1) makes the election available only for taxable bonds, which is
+    what makes amortization mandatory rather than elective for tax-exempt ones.
+
+    That tax-exempt interest escapes the net investment income tax is a
+    derivation rather than a quoted exclusion: section 1411(c)(1)(A)(i) reaches
+    "gross income from interest", and section 103 keeps this interest out of
+    gross income, so it never enters the base. The pack records the derivation
+    rather than implying the statute says it directly.
+
+    What this pack does NOT cover: any state's treatment of its own or another
+    state's bonds, the alternative minimum tax computation itself (that lives
+    in the income pack), original issue discount accrual schedules, and whether
+    a particular bond is a private activity bond, which is a fact about the
+    issue and not something this deployment can determine.
+
+rules:
+  de_minimis_fraction:
+    # Per complete year to maturity, applied to the redemption price.
+    authority: "IRC 1278(a)(2)(C)"
+    legal_effective_from: "1984-07-18"
+    value: "0.0025"
+
+  market_discount_character:
+    # Accretion above the de minimis threshold is ordinary income on
+    # disposition, not capital gain. This is the trap: a "discount muni" is not
+    # wholly tax-exempt.
+    authority: "IRC 1276(a)(1)"
+    legal_effective_from: "1993-06-08"
+    value: "ordinary_income"
+
+  de_minimis_discount_character:
+    # Below the threshold the discount is capital gain on sale or redemption.
+    authority: "IRC 1278(a)(2)(C); 1276(a)(1)"
+    legal_effective_from: "1984-07-18"
+    value: "capital_gain"
+
+  premium_deduction_allowed:
+    # "In the case of any bond the interest on which is excludable from gross
+    # income, no deduction shall be allowed for the amortizable bond premium."
+    authority: "IRC 171(a)(2)"
+    legal_effective_from: "1986-01-01"
+    value: "none"
+
+  premium_amortization_election:
+    # The election under 171(c)(1) exists only for taxable bonds, so for a
+    # tax-exempt bond amortization is not a choice.
+    authority: "IRC 171(c)(1)"
+    legal_effective_from: "1986-01-01"
+    value: "mandatory_for_tax_exempt"
+
+  premium_basis_adjustment:
+    authority: "IRC 1016(a)(5); 171(a)(3)"
+    legal_effective_from: "1986-01-01"
+    value: "reduce_basis_by_amortization"
+
+  private_activity_amt_preference:
+    # Interest on a specified private activity bond is an item of tax
+    # preference, so a "tax-free" bond is not tax-free for a taxpayer in AMT.
+    authority: "IRC 57(a)(5)(A)"
+    legal_effective_from: "1986-08-08"
+    value: "preference_item"
+
+  private_activity_amt_exempt_issue_years:
+    # Bonds issued in these years are not specified private activity bonds for
+    # the preference, under 57(a)(5)(C)(vi).
+    authority: "IRC 57(a)(5)(C)(vi)"
+    legal_effective_from: "2009-01-01"
+    value: ["2009", "2010"]
+
+  tax_exempt_interest_in_net_investment_income:
+    # Derived, not quoted: 1411 reaches gross income from interest, and 103
+    # keeps this interest out of gross income.
+    authority: "IRC 1411(c)(1)(A)(i) read with IRC 103(a)"
+    legal_effective_from: "2013-01-01"
+    value: "excluded"
+
+  tax_exempt_interest_in_provisional_income:
+    # The reason "tax-free" overstates it: exempt interest is added back when
+    # deciding how much Social Security is taxable.
+    authority: "IRC 86(b)(2)(B)"
+    legal_effective_from: "1986-01-01"
+    value: "included"

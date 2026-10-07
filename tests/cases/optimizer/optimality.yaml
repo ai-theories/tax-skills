@@ -1,0 +1,132 @@
+# Cases only a true optimizer can pass. An adapter that does not claim
+# optimality skips these; they are the gate Oracle, or any successor, must
+# clear before `claims_optimality: true` may appear in engines.yaml.
+#
+# The rule-based selector would fail several of these by design. That gap is
+# the measured distance between "feasible" and "optimal".
+
+- id: opt-spends-budget-on-the-better-lot
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: gains_only
+  description: >
+    A 5,000 gross budget buys 15,000 of cash from the large gain lot or 5,000
+    from the small one. Greedy ordering takes the small lot first and then
+    cannot afford the large one, missing the target entirely.
+  constraints: {cash_target: "15000", gain_budget: {amount: "5000", netting: gross_gains}}
+  expect: {solver_status: optimal, sells_include: [lot_gain_big], cash_at_least: "15000"}
+
+- id: opt-chooses-cheaper-cash-per-budget-dollar
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: efficiency
+  description: >
+    lot_cheap yields 15,000 of cash for 1,000 of gain; lot_dear yields 5,000
+    for 4,000. A 1,000 budget should buy the cheap lot rather than fail.
+  constraints: {cash_target: "15000", gain_budget: {amount: "1000", netting: gross_gains}}
+  expect: {solver_status: optimal, sells_include: [lot_cheap], sells_exclude: [lot_dear]}
+
+- id: opt-no-dominated-trade
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: efficiency
+  description: >
+    Where one lot is better on both cash raised and budget consumed, the
+    dominated lot must never be preferred.
+  constraints: {cash_target: "5000", gain_budget: {amount: "4000", netting: gross_gains}}
+  expect: {sells_exclude: [lot_dear]}
+
+- id: opt-maximises-cash-within-the-budget
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    With a 1,000 gross budget the best reachable cash is both loss lots plus
+    the small gain lot: 14,200 + 5,000 = 19,200.
+  constraints: {cash_target: "19200", gain_budget: {amount: "1000", netting: gross_gains}}
+  expect: {solver_status: optimal, cash_at_least: "19200"}
+
+- id: opt-uses-net-offsetting-to-reach-further
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    Under net netting the 6,800 of harvested losses offset the gains, so the
+    whole portfolio is reachable within a zero net budget.
+  constraints: {cash_target: "34200", gain_budget: {amount: "0", netting: net_gains}}
+  expect: {solver_status: optimal, cash_at_least: "34200", net_gain_at_most: "0"}
+
+- id: opt-declines-an-unnecessary-gain
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    Where losses alone reach the target, an optimizer realizes no gain at all
+    even though the budget would have allowed one.
+  constraints: {cash_target: "14200", gain_budget: {amount: "15000"}}
+  expect: {gross_gains_at_most: "0", cash_at_least: "14200"}
+
+- id: opt-minimum-trades-for-the-target
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: losses_only
+  description: >
+    A target reachable from a single lot should not be met by liquidating two,
+    where transaction count forms part of the objective.
+  constraints: {cash_target: "6200", gain_budget: {amount: "15000"}}
+  expect: {trade_count: 1}
+
+- id: opt-respects-restrictions-while-optimising
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: efficiency
+  description: >
+    Optimality never licenses breaking a restriction in order to find a better
+    answer; the restricted lot stays untouched.
+  constraints:
+    cash_target: "15000"
+    gain_budget: {amount: "10000"}
+    restrictions: [{code: DO_NOT_SELL, securities: [AAA]}]
+  expect: {sells_exclude: [lot_cheap]}
+
+- id: opt-reports-optimal-status
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    An engine that proves optimality reports it, and must set the
+    optimality_claimed diagnostic to match the status it gives.
+  constraints: {cash_target: "6000", gain_budget: {amount: "15000"}}
+  expect: {solver_status: optimal, diagnostics_include: [optimality_claimed]}
+
+- id: opt-reports-a-gap-when-it-stops-early
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    An optimizer halted by a time limit reports a bound and a gap rather than
+    claiming an optimum it never proved.
+  constraints: {cash_target: "20000", gain_budget: {amount: "15000"}}
+  expect: {diagnostics_include: [optimality_gap]}
+
+- id: opt-infeasible-is-proven-not-assumed
+  category: optimality
+  requires: [optimality]
+  portfolio_ref: mixed
+  description: >
+    An optimizer declaring infeasibility should identify the conflicting
+    constraints rather than merely failing to find an answer.
+  constraints: {cash_target: "34200", gain_budget: {amount: "0", netting: gross_gains}}
+  expect: {solver_status: infeasible, diagnostics_include: [infeasibility_reason]}
+
+- id: opt-household-joint-beats-sequential
+  category: optimality
+  requires: [optimality]
+  adapters: [household-optimizer]
+  scope: household
+  portfolio_ref: household
+  description: >
+    A joint household optimizer serves both accounts from one budget with no
+    ordering at all, which is the entire reason to build one.
+  constraints: {cash_target: "21200", gain_budget: {amount: "5000", netting: gross_gains}}
+  expect: {solver_status: optimal, cash_at_least: "21200"}

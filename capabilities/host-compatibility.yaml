@@ -1,0 +1,15 @@
+# Host behaviour must be verified per host; do not assume parity.
+schema_version: "1.0"
+hosts:
+  - host: claude-code
+    skills: verified
+    agent_definitions: verified
+    mcp_stdio: verified
+    notes: Reference host for this release.
+  - host: other
+    skills: unverified
+    agent_definitions: unverified
+    mcp_stdio: unverified
+    notes: >
+      Installation manifests, delegation semantics, tool allowlists and auth
+      behaviour require separate compatibility testing before any claim.

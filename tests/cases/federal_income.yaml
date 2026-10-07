@@ -1,0 +1,129 @@
+# Scripted cases for the year-adjusted federal income rules.
+# Synthetic taxpayers only. Figures are hand-computed in the notes.
+
+- id: ordinary-mfj-three-bands
+  rules: [ordinary_brackets]
+  description: >
+    MFJ taxable income of 152,800 spans three bands.
+    10% x 24,800 = 2,480; 12% x 76,000 = 9,120; 22% x 52,000 = 11,440.
+  calc: ordinary_tax
+  given: {taxable_income: "152800", filing_status: MFJ}
+  expect:
+    tax: "23040.00"
+    marginal_rate: "22%"
+    "bands[0].tax": "2480.00"
+    "bands[2].tax": "11440.00"
+
+- id: ordinary-single-top-band
+  rules: [ordinary_brackets]
+  description: A single filer above 640,600 reaches the 37% band.
+  calc: ordinary_tax
+  given: {taxable_income: "700000", filing_status: SINGLE}
+  expect: {marginal_rate: "37%", bracket_ceiling: null}
+
+- id: ordinary-hoh-differs-from-single
+  rules: [ordinary_brackets]
+  description: >
+    HOH bands are wider at the bottom than single.
+    10% x 17,700 = 1,770 plus 12% x 42,300 = 5,076, giving 6,846.
+  calc: ordinary_tax
+  given: {taxable_income: "60000", filing_status: HOH}
+  expect: {tax: "6846.00", marginal_rate: "12%"}
+
+- id: ordinary-mfs-top-band-is-half-of-mfj
+  rules: [ordinary_brackets]
+  description: MFS reaches 37% at 384,350, half the MFJ figure.
+  calc: ordinary_tax
+  given: {taxable_income: "400000", filing_status: MFS}
+  expect: {marginal_rate: "37%"}
+
+- id: standard-deduction-mfj
+  rules: [standard_deduction, ordinary_brackets]
+  description: 185,000 less the 32,200 MFJ standard deduction leaves 152,800.
+  calc: federal_summary
+  given: {ordinary_income: "185000", filing_status: MFJ}
+  expect: {deduction: "32200.00", ordinary.taxable_income: "152800.00"}
+
+- id: standard-deduction-overridden-by-itemizing
+  rules: [standard_deduction]
+  description: A supplied itemized figure replaces the standard deduction.
+  calc: federal_summary
+  given: {ordinary_income: "185000", filing_status: MFJ, deduction: "60000"}
+  expect: {deduction: "60000.00", ordinary.taxable_income: "125000.00"}
+
+- id: capital-gain-straddles-zero-and-fifteen
+  rules: [capital_gain_brackets]
+  description: >
+    The classic error: taxing the whole gain at the rate its top dollar reaches.
+    Ordinary income of 90,000 leaves 8,900 of the MFJ 0% band; the remaining
+    91,100 is taxed at 15% for 13,665, not 15,000.
+  calc: capital_gain
+  given: {gain: "100000", ordinary_taxable_income: "90000", filing_status: MFJ}
+  expect:
+    tax: "13665.00"
+    blended_rate: "13.66%"
+    "bands[0].income_in_band": "8900.00"
+    "bands[1].tax": "13665.00"
+
+- id: capital-gain-entirely-in-zero-band
+  rules: [capital_gain_brackets]
+  description: A modest gain with no other income is untaxed.
+  calc: capital_gain
+  given: {gain: "40000", ordinary_taxable_income: "0", filing_status: MFJ}
+  expect: {tax: "0.00", blended_rate: "0.00%"}
+
+- id: capital-gain-reaches-twenty-percent
+  rules: [capital_gain_brackets]
+  description: 13,700 of room below 613,700 at 15%, then 86,300 at 20%.
+  calc: capital_gain
+  given: {gain: "100000", ordinary_taxable_income: "600000", filing_status: MFJ}
+  expect: {tax: "19315.00", "bands[1].income_in_band": "86300.00"}
+
+- id: niit-excess-binds
+  rules: [niit]
+  description: MAGI 260,000 is 10,000 over the MFJ threshold; NII is larger.
+  calc: niit
+  given: {net_investment_income: "45000", magi: "260000", filing_status: MFJ}
+  expect: {amount_subject: "10000.00", tax: "380.00"}
+
+- id: niit-nii-binds
+  rules: [niit]
+  description: Well over the threshold, so the smaller NII is the base.
+  calc: niit
+  given: {net_investment_income: "5000", magi: "400000", filing_status: MFJ}
+  expect: {amount_subject: "5000.00", tax: "190.00"}
+
+- id: niit-below-threshold
+  rules: [niit]
+  description: No surtax below the threshold, however large the NII.
+  calc: niit
+  given: {net_investment_income: "150000", magi: "240000", filing_status: MFJ}
+  expect: {tax: "0.00"}
+
+- id: niit-mfs-threshold-is-125000
+  rules: [niit]
+  description: The MFS threshold is half the MFJ figure and is not indexed.
+  calc: niit
+  given: {net_investment_income: "100000", magi: "130000", filing_status: MFS}
+  expect: {threshold: "125000.00", tax: "190.00"}
+
+- id: capital-loss-limited-with-carryforward
+  rules: [capital_loss_limit]
+  description: 3,000 deductible now, the remaining 9,000 carries forward.
+  calc: capital_loss
+  given: {net_capital_loss: "12000", filing_status: MFJ}
+  expect: {deductible_this_year: "3000.00", carryforward: "9000.00"}
+
+- id: capital-loss-mfs-limit-halved
+  rules: [capital_loss_limit]
+  description: MFS is limited to 1,500, half the amount available to other statuses.
+  calc: capital_loss
+  given: {net_capital_loss: "12000", filing_status: MFS}
+  expect: {deductible_this_year: "1500.00", carryforward: "10500.00"}
+
+- id: capital-loss-smaller-than-the-limit
+  rules: [capital_loss_limit]
+  description: A loss under the cap is fully deductible with nothing carried.
+  calc: capital_loss
+  given: {net_capital_loss: "1200", filing_status: SINGLE}
+  expect: {deductible_this_year: "1200.00", carryforward: "0.00"}

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/evidence-package.schema.json",
+  "title": "EvidencePackage",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "run_id",
+    "tenant_id",
+    "mode",
+    "execution_authorized",
+    "scope",
+    "inputs",
+    "results",
+    "engine_manifest",
+    "claim_map",
+    "provenance",
+    "content_hash"
+  ],
+  "description": "Every number a narrative may state exists here and is addressed by claim_map.",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "evidence_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "mode": {
+      "const": "analysis_only"
+    },
+    "execution_authorized": {
+      "const": false
+    },
+    "interpreted_request": {
+      "type": "object"
+    },
+    "scope": {
+      "type": "object"
+    },
+    "inputs": {
+      "type": "object",
+      "required": [
+        "snapshot_ref",
+        "snapshot_hash"
+      ]
+    },
+    "results": {
+      "type": "object"
+    },
+    "assumptions": {
+      "type": "array"
+    },
+    "limitations": {
+      "type": "array"
+    },
+    "engine_manifest": {
+      "type": "object",
+      "required": [
+        "package_version",
+        "calculation_versions"
+      ]
+    },
+    "claim_map": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "content_hash": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    }
+  }
+}

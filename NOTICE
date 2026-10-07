@@ -1,0 +1,14 @@
+Tax Agent
+Copyright 2026 ai-theories
+
+This product includes software developed at ai-theories.
+
+Structure and review patterns are adapted from Anthropic's
+claude-for-financial-advisors reference implementation, which is
+Apache-2.0 licensed. No code was copied; the tax methods, calculations
+and rule packs here are original and are not validated by Anthropic.
+
+The tax figures in rules/tax/parameter-packs/ are transcribed from the
+authorities each rule cites. They have not been signed off by a named
+tax professional. Nothing in this software is tax, investment or legal
+advice.

@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tax-agent — analysis dashboard</title>
+<style>
+  :root {
+    --bg: #fbfbfa; --panel: #ffffff; --ink: #1b1b19; --muted: #6b6b66;
+    --line: #e3e2de; --accent: #3b5bdb; --ok: #2b7a4b; --warn: #9a6700;
+    --stop: #a33; --code: #f5f5f3;
+    --chip-ok: #e6f2ea; --chip-warn: #fdf3d8; --chip-stop: #fbeaea; --chip-info: #e8edfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --panel: #1e1f22; --ink: #e8e8e5; --muted: #9b9b95;
+      --line: #32343a; --accent: #8fa6ff; --ok: #6cc08a; --warn: #e0b44a;
+      --stop: #e08585; --code: #232428;
+      --chip-ok: #1e3328; --chip-warn: #3a3120; --chip-stop: #3a2424; --chip-info: #23283c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { padding: 22px 28px 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; }
+  a { color: var(--accent); }
+  header a { text-decoration: underline; }
+  .wrap.single { max-width: 980px; margin: 0 auto; }
+  .scenario { width: 100%; text-align: left; background: var(--panel); color: inherit;
+              border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px;
+              margin-bottom: 8px; cursor: pointer; font: inherit; }
+  .scenario:hover { border-color: var(--accent); }
+  .scenario[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--chip-info); }
+  .scenario .t { font-weight: 560; font-size: 14px; }
+  main { padding: 20px 22px 60px; min-width: 0; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
+          font-weight: 600; letter-spacing: 0.02em; border: 1px solid transparent; }
+  .chip.ok { background: var(--chip-ok); color: var(--ok); }
+  .chip.warn { background: var(--chip-warn); color: var(--warn); }
+  .chip.stop { background: var(--chip-stop); color: var(--stop); }
+  .chip.info { background: var(--chip-info); color: var(--accent); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+          padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase;
+             letter-spacing: 0.06em; color: var(--muted); font-weight: 650; }
+  .why { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line);
+           vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .kv { display: grid; grid-template-columns: 190px minmax(0,1fr); gap: 4px 14px; font-size: 13.5px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px;
+        padding: 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 0; }
+  details summary { cursor: pointer; color: var(--accent); font-size: 13.5px; }
+  .empty { color: var(--muted); font-size: 13.5px; }
+  .banner { border-radius: 10px; padding: 13px 15px; margin-bottom: 14px;
+            border: 1px solid var(--line); }
+  .banner.ok { background: var(--chip-ok); }
+  .banner.warn { background: var(--chip-warn); }
+  .banner.stop { background: var(--chip-stop); }
+  .banner .s { font-weight: 640; font-size: 15px; }
+  ul.tight { margin: 4px 0 0; padding-left: 18px; }
+  ul.tight li { margin: 3px 0; font-size: 13.5px; }
+  .foot { color: var(--muted); font-size: 12.5px; margin-top: 18px; }
+  .calcgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px,1fr)); gap: 12px; }
+  .calc { border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; }
+  .calc h3 { margin: 0 0 3px; font-size: 14.5px; }
+  .calc .s { color: var(--muted); font-size: 12.5px; margin-bottom: 9px; }
+  .row { display: grid; grid-template-columns: 1fr 120px; gap: 7px; align-items: center;
+         margin-bottom: 6px; }
+  .row label { font-size: 12.5px; color: var(--muted); }
+  input, select { font: inherit; font-size: 13px; padding: 4px 7px; width: 100%;
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; }
+  button.go { font: inherit; font-size: 13px; font-weight: 600; padding: 5px 13px;
+    border-radius: 7px; border: 1px solid var(--accent); background: var(--chip-info);
+    color: var(--accent); cursor: pointer; margin-top: 4px; }
+  .result { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 9px;
+            font-size: 13px; display: none; }
+  .result.on { display: block; }
+  .result .big { font-size: 20px; font-weight: 650; }
+  .result .line { display: flex; justify-content: space-between; gap: 10px;
+                  color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .result .err { color: var(--stop); }
+  /* tabs */
+  nav.tabs { display:flex; gap:4px; flex-wrap:wrap; padding:0 16px; margin:0 auto 18px;
+             max-width:760px; border-bottom:1px solid var(--line); }
+  nav.tabs button { background:none; border:0; border-bottom:2px solid transparent;
+                    padding:10px 12px; font:inherit; font-size:14px; color:var(--muted);
+                    cursor:pointer; }
+  nav.tabs button:hover { color:var(--ink); }
+  nav.tabs button.on { color:var(--accent); border-bottom-color:var(--accent); }
+  /* use cases */
+  .grouphead { font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+               color:var(--muted); margin:18px 0 8px; }
+  .case { border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+          margin-bottom:8px; cursor:pointer; background:var(--card); }
+  .case:hover { border-color:var(--accent); }
+  .case.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .case .t { font-weight:600; }
+  .case .m { font-size:12px; color:var(--muted); margin-top:2px; }
+  .case .tool { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .case.ro { cursor:default; }
+  .case.ro:hover { border-color:var(--line); }
+  .suite { display:inline-block; font-family:var(--mono); font-size:10px;
+           letter-spacing:.04em; text-transform:uppercase; padding:1px 5px;
+           border:1px solid var(--line); border-radius:4px; color:var(--muted);
+           margin-right:6px; }
+  .suite.console { border-color:var(--accent); color:var(--accent); }
+  #invfilter { width:100%; padding:9px 11px; font:inherit; font-size:13px;
+               border:1px solid var(--line); border-radius:8px;
+               background:var(--card); color:var(--ink); }
+  /* protocol frames */
+  .frame { border:1px solid var(--line); border-radius:6px; margin-bottom:6px;
+           overflow:hidden; }
+  .frame > div:first-child { font-family:var(--mono); font-size:11px; padding:4px 8px;
+                             background:var(--bg); border-bottom:1px solid var(--line); }
+  .frame pre { margin:0; padding:8px; font-size:11px; overflow-x:auto;
+               font-family:var(--mono); white-space:pre-wrap; word-break:break-word; }
+  .frame.sent > div:first-child { color:var(--accent); }
+  .tool-row { display:flex; justify-content:space-between; gap:10px; padding:8px 0;
+              border-bottom:1px solid var(--line); }
+  .tool-row:last-child { border-bottom:0; }
+  .step { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .step:last-child { border-bottom:0; }
+  .step .tag { flex:0 0 76px; font-family:var(--mono); font-size:10px;
+               text-transform:uppercase; letter-spacing:.06em; padding-top:2px; }
+  .step.oracle .tag { color:var(--ok); }
+  .step.agentic .tag { color:var(--accent); }
+  .step.refused .tag { color:var(--stop); }
+  .step .body { flex:1; }
+  .step .body .w { font-size:12px; color:var(--muted); margin-top:3px; }
+  .ex { display:inline-block; margin:3px 4px 0 0; padding:5px 9px; font-size:12px;
+        border:1px solid var(--line); border-radius:14px; cursor:pointer;
+        background:var(--card); color:var(--muted); }
+  .ex:hover { border-color:var(--accent); color:var(--accent); }
+
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Tax skills console</h1>
+  <div class="sub">
+    Eight MCP servers, their agents and skills, driven as real processes over JSON-RPC —
+    the same command a host runs on install. Figures verified line by line against
+    <a href="https://www.irs.gov/pub/irs-drop/rp-25-32.pdf">Rev. Proc. 2025-32</a>.
+    Nothing is calculated in this page, and nothing here places a trade.
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="chat" class="on">Ask</button>
+  <button data-tab="cases">Use cases</button>
+  <button data-tab="inventory">All 301 cases</button>
+  <button data-tab="servers">MCP servers</button>
+  <button data-tab="calcs">Calculators</button>
+  <button data-tab="flows">Workflows</button>
+  <button data-tab="coverage">Coverage</button>
+</nav>
+
+<div class="wrap single">
+  <main>
+    <!-- Ask: which agent owns a question, and which steps are deterministic -->
+    <section data-panel="chat">
+      <div class="card">
+        <h2>Ask the skills</h2>
+        <div class="sub" style="margin-bottom:10px">
+          Describe a client situation. This shows which agent would own it, which of
+          its steps are deterministic engine calls and which are judgment, and what it
+          would refuse. The router here is a keyword matcher, not an agent — the
+          judgment steps are described, not performed.
+        </div>
+        <input id="ask" type="text" placeholder="e.g. a $20 million estate with $2 million of lifetime gifts"
+               style="width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;
+                      background:var(--card);color:var(--ink);font:inherit;font-size:14px">
+        <div style="margin-top:10px">
+          <button id="asksend" type="button" class="go">Route it</button>
+        </div>
+        <div id="askexamples" style="margin-top:12px"></div>
+      </div>
+      <div id="askout"></div>
+      <details class="card">
+        <summary><strong>What the labels mean</strong></summary>
+        <div id="askexplain" style="margin-top:10px"></div>
+      </details>
+    </section>
+
+    <!-- Use cases: every one is a real tool call to a real server process -->
+    <section data-panel="cases" hidden>
+      <div class="card">
+        <h2>Scripted use cases</h2>
+        <div class="sub" style="margin-bottom:10px">
+          Each one names a server, a tool and exact arguments, and records the outcome it
+          must produce. Running it spawns the declared command and speaks the protocol, so a
+          case that passes is evidence the tool works — not that the page can draw it.
+        </div>
+        <button id="runsuite" type="button" class="go">Run every case</button>
+        <span id="suitesum" class="sub" style="margin-left:10px"></span>
+        <div id="suiteout" style="margin-top:12px"></div>
+      </div>
+      <div id="caselist"></div>
+      <div id="caseout"></div>
+    </section>
+
+    <section data-panel="inventory" hidden>
+      <div class="card">
+        <h2>Every scripted case</h2>
+        <div class="sub" style="margin-bottom:10px">
+          All <b id="invtotal">301</b> cases, grouped by what the client is trying to
+          achieve. <span id="invsuites"></span> The console cases are clickable and run
+          against a real server; the rule and conformance cases run in the test suite on
+          every build, and are listed here with the file they live in.
+        </div>
+        <input id="invfilter" type="search" autocomplete="off"
+               placeholder="Filter by id, objective or what it pins — try &quot;wash&quot;, &quot;muni&quot;, &quot;budget&quot;">
+      </div>
+      <div id="invlist"></div>
+      <div id="invout"></div>
+    </section>
+
+    <!-- Servers: what each process actually publishes, and a form per tool -->
+    <section data-panel="servers" hidden>
+      <div class="card">
+        <h2>Declared servers</h2>
+        <div class="sub">
+          Read from <code>.mcp.json</code> and started here exactly as a host would start
+          them. A server that will not start says so rather than being left out.
+        </div>
+      </div>
+      <div id="serverlist" class="empty">starting the servers…</div>
+      <div id="toolout"></div>
+    </section>
+
+    <section data-panel="calcs" hidden>
+      <div class="card">
+        <h2>Enter your numbers</h2>
+        <div class="sub" style="margin-bottom:10px">
+          The same calculations the federal server exposes as tools, computed by one shared
+          definition so the page and the tool surface cannot drift apart.
+        </div>
+        <div id="calcs" class="empty">loading…</div>
+      </div>
+    </section>
+
+    <section data-panel="flows" hidden>
+      <div class="card">
+        <h2>Portfolio workflows</h2>
+        <div class="sub" style="margin-bottom:10px">
+          Lot-level analysis over a synthetic portfolio: harvesting, wash-sale screening across
+          accounts and UMA sleeves, and household coordination. Pick one to run it end to end.
+        </div>
+        <div id="list"></div>
+      </div>
+      <div id="out"></div>
+    </section>
+
+    <section data-panel="coverage" hidden>
+      <div class="card">
+        <h2>Coverage and limits</h2>
+        <div class="sub" style="margin:10px 0">
+          What this deployment covers, and what it declines rather than approximates.
+        </div>
+        <div id="caps" class="empty">loading…</div>
+        <div style="margin-top:14px">
+          <button id="smoke" type="button" class="go">Run the smoke test</button>
+          <div id="smokeout" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c;
+  if (txt !== undefined) n.textContent = txt; return n; };
+const esc = s => String(s ?? "");
+// "-3000.00" reads as "-$3,000.00", not "$-3000.00".
+const money = v => {
+  const s = String(v ?? "");
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return s;
+  const neg = s.startsWith("-"), [i, f] = s.replace("-", "").split(".");
+  return (neg ? "-$" : "$") + Number(i).toLocaleString("en-US") + (f ? "." + f : "");
+};
+
+const KIND = { completed: "ok", completed_with_limitations: "ok", accepted: "info",
+               needs_input: "info", blocked: "warn", failed: "stop" };
+const SAYS = { completed: "Completed",
+               completed_with_limitations: "Completed, with limitations",
+               accepted: "Accepted for review", needs_input: "Needs input",
+               blocked: "Blocked", failed: "Failed" };
+
+
+
+// --- ask ------------------------------------------------------------------
+const KINDLABEL = { oracle: "oracle", agentic: "agentic", refused: "refused" };
+
+function renderRoute(r, data) {
+  const c = card(r.agent + (r.skill ? "  \u00b7  " + r.skill : ""));
+  const chip = el("span", "chip " + (r.confidence === "clear" ? "ok" :
+                  r.confidence === "ambiguous" ? "stop" : "warn"), r.confidence);
+  c.querySelector("h2").appendChild(document.createTextNode("  "));
+  c.querySelector("h2").appendChild(chip);
+  if (r.matched?.length)
+    c.appendChild(el("div", "sub", "matched on: " + r.matched.join(", ")));
+  if (r.alternatives?.length)
+    c.appendChild(el("div", "sub", "could also be: " + r.alternatives.join(", ")));
+
+  r.steps.forEach(s => {
+    const row = el("div", "step " + s.kind);
+    row.appendChild(el("div", "tag", KINDLABEL[s.kind]));
+    const body = el("div", "body");
+    body.appendChild(el("div", null, s.summary));
+    if (s.why) body.appendChild(el("div", "w", s.why));
+    if (s.kind === "oracle" && s.tool) {
+      const run = el("button", "go", "Run " + s.tool);
+      run.type = "button";
+      run.style.marginTop = "8px";
+      run.onclick = async () => {
+        showTab("servers");
+        // Reuse the server tab's form so the call is made the same way any
+        // other tool call is: real process, real protocol, visible frames.
+        await loadServers();
+        const live = (serverTools[s.server] || []).find(t => t.name === s.tool);
+        openToolForm(s.server, live || { name: s.tool, description: s.summary,
+                                         inputSchema: { properties: {} } },
+                     s.argument_template);
+      };
+      body.appendChild(run);
+      body.appendChild(el("div", "w",
+        "Arguments are the tool's own example defaults, not figures taken from " +
+        "your sentence. Edit them before running."));
+    }
+    row.appendChild(body);
+    c.appendChild(row);
+  });
+  return c;
+}
+
+async function ask(message) {
+  const out = $("#askout");
+  out.textContent = "";
+  if (!message.trim()) return;
+  const data = await (await fetch("/api/chat/route", {
+    method: "POST", body: JSON.stringify({ message })
+  })).json();
+  if (data.error) { out.appendChild(el("div", "banner stop", data.error)); return; }
+
+  if (!data.routed) {
+    const b = el("div", "banner warn");
+    b.appendChild(el("div", "s", "No agent matched"));
+    b.appendChild(el("div", "why",
+      "The keyword router found nothing. That is a limit of this matcher, not a " +
+      "statement that the question is out of scope \u2014 a model reading the agent " +
+      "descriptions would do better, and would ask."));
+    out.appendChild(b);
+    return;
+  }
+  if (data.figures_read?.length) {
+    const b = el("div", "banner info");
+    b.appendChild(el("div", "s", "Figures read from your sentence"));
+    b.appendChild(el("div", "why", data.figures_read.join(", ") +
+      " \u2014 a reading, not a fact. Check it before trusting anything built on it."));
+    out.appendChild(b);
+  }
+  data.routes.forEach((r, i) => {
+    const c = renderRoute(r, data);
+    if (i > 0) c.style.opacity = "0.72";
+    out.appendChild(c);
+  });
+  out.scrollIntoView({ block: "start" });
+}
+
+async function loadAsk() {
+  const { explain, groups } = await (await fetch("/api/chat/explain")).json();
+  const host = $("#askexamples");
+  const total = groups.reduce((n, g) => n + g.questions.length, 0);
+  host.appendChild(el("div", "sub",
+    "Try one \u2014 " + total + " questions across " + groups.length +
+    " objectives, each routing to a different agent:"));
+  groups.forEach(g => {
+    host.appendChild(el("div", "grouphead", g.group));
+    g.questions.forEach(q => {
+      const chip = el("span", "ex", q.length > 72 ? q.slice(0, 70) + "\u2026" : q);
+      chip.title = q;
+      chip.onclick = () => { $("#ask").value = q; ask(q); };
+      host.appendChild(chip);
+    });
+  });
+  const box = $("#askexplain");
+  explain.kinds.forEach(k => {
+    const row = el("div", "step " + k.kind);
+    row.appendChild(el("div", "tag", KINDLABEL[k.kind]));
+    const body = el("div", "body");
+    body.appendChild(el("div", null, k.meaning));
+    row.appendChild(body);
+    box.appendChild(row);
+  });
+  box.appendChild(el("div", "why", explain.note));
+}
+
+// --- tabs -----------------------------------------------------------------
+function showTab(name) {
+  document.querySelectorAll("#tabs button").forEach(b =>
+    b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("[data-panel]").forEach(p =>
+    p.hidden = p.dataset.panel !== name);
+  if (name === "servers") loadServers();
+  if (name === "inventory") loadInventory();
+}
+
+// --- the MCP console ------------------------------------------------------
+// Everything below talks to endpoints that drive the declared servers as
+// processes. The frames shown are the actual JSON-RPC conversation.
+
+const VERDICT = { completed: "ok", completed_with_limitations: "ok", accepted: "info" };
+
+function frames(list) {
+  const box = el("div");
+  box.appendChild(el("div", "sub", "The conversation on the wire:"));
+  list.forEach(f => {
+    const d = el("div", "frame " + f.direction);
+    const head = el("div", null,
+      (f.direction === "sent" ? "\u2192 sent" : "\u2190 received") +
+      (f.elapsed_ms ? "  " + f.elapsed_ms + " ms" : ""));
+    d.appendChild(head);
+    const pre = el("pre");
+    pre.textContent = JSON.stringify(f.payload, null, 1);
+    d.appendChild(pre);
+    box.appendChild(d);
+  });
+  return box;
+}
+
+function renderCase(r, target) {
+  const out = $(target);
+  out.textContent = "";
+  if (r.error) { out.appendChild(el("div", "banner stop", r.error)); return; }
+
+  const kind = r.ok ? "ok" : "stop";
+  const banner = el("div", "banner " + kind);
+  banner.appendChild(el("div", "s", r.ok ? "as documented" : "NOT as documented"));
+  banner.appendChild(el("div", "sub",
+    "expected " + r.expected + ", got " + r.actual));
+  banner.appendChild(el("div", "why", r.shows || ""));
+  out.appendChild(banner);
+
+  const req = card("Call");
+  const kv = el("div", "kv");
+  [["server", r.server], ["tool", r.tool]].forEach(([k, v]) => {
+    kv.appendChild(el("div", null, k)); kv.appendChild(el("div", "mono", esc(v)));
+  });
+  req.appendChild(kv);
+  const pre = el("pre");
+  pre.style.cssText = "font-size:11px;overflow-x:auto;white-space:pre-wrap";
+  pre.textContent = JSON.stringify(r.arguments, null, 1);
+  req.appendChild(pre);
+  out.appendChild(req);
+
+  if (r.envelope) {
+    const c = card("Envelope the server returned");
+    const p = el("pre");
+    p.style.cssText = "font-size:11px;overflow-x:auto;white-space:pre-wrap";
+    p.textContent = JSON.stringify(r.envelope, null, 1);
+    c.appendChild(p);
+    out.appendChild(c);
+  }
+
+  if (r.frames?.length) {
+    const c = card("Protocol");
+    c.appendChild(frames(r.frames));
+    out.appendChild(c);
+  }
+  out.scrollIntoView({ block: "start" });
+}
+
+async function loadCases() {
+  const { groups, cases } = await (await fetch("/api/console/cases")).json();
+  const host = $("#caselist");
+  host.textContent = "";
+  groups.forEach(group => {
+    const members = cases.filter(c => c.group === group);
+    if (!members.length) return;
+    const wrap = card(group);
+    members.forEach(c => {
+      const row = el("div", "case");
+      row.appendChild(el("div", "t", c.title));
+      row.appendChild(el("div", "m", c.shows));
+      row.appendChild(el("div", "tool", c.server + " \u00b7 " + c.tool));
+      row.onclick = async () => {
+        document.querySelectorAll(".case").forEach(x => x.classList.remove("on"));
+        row.classList.add("on");
+        $("#caseout").textContent = "";
+        $("#caseout").appendChild(el("div", "sub", "calling the server\u2026"));
+        const r = await (await fetch("/api/console/case/" + c.id)).json();
+        renderCase(r, "#caseout");
+      };
+      wrap.appendChild(row);
+    });
+    host.appendChild(wrap);
+  });
+}
+
+let INVENTORY = null;
+
+function renderInventory(term) {
+  const host = $("#invlist");
+  host.textContent = "";
+  const needle = (term || "").trim().toLowerCase();
+  let shown = 0;
+  INVENTORY.groups.forEach(g => {
+    const members = !needle ? g.cases : g.cases.filter(c =>
+      c.id.toLowerCase().includes(needle) ||
+      c.group.toLowerCase().includes(needle) ||
+      (c.pins || "").toLowerCase().includes(needle));
+    if (!members.length) return;
+    shown += members.length;
+    const wrap = card(g.group + "  \u00b7  " + members.length +
+                      (members.length === g.count ? "" : " of " + g.count));
+    wrap.appendChild(el("div", "sub", g.lead));
+    members.forEach(c => {
+      const row = el("div", "case" + (c.runnable ? "" : " ro"));
+      const head = el("div", "t");
+      head.appendChild(el("span", "suite " + c.suite, c.suite));
+      head.appendChild(document.createTextNode(c.id));
+      row.appendChild(head);
+      if (c.pins) row.appendChild(el("div", "m", c.pins));
+      row.appendChild(el("div", "tool", c.runnable ? c.detail : c.source));
+      if (c.runnable) {
+        row.onclick = async () => {
+          document.querySelectorAll("#invlist .case").forEach(x =>
+            x.classList.remove("on"));
+          row.classList.add("on");
+          $("#invout").textContent = "";
+          $("#invout").appendChild(el("div", "sub", "calling the server\u2026"));
+          const r = await (await fetch("/api/console/case/" + c.id)).json();
+          renderCase(r, "#invout");
+        };
+      }
+      wrap.appendChild(row);
+    });
+    host.appendChild(wrap);
+  });
+  if (!shown) host.appendChild(card("Nothing matches \u201c" + term + "\u201d"));
+}
+
+async function loadInventory() {
+  if (INVENTORY) return;
+  INVENTORY = await (await fetch("/api/console/inventory")).json();
+  $("#invtotal").textContent = INVENTORY.total;
+  $("#invsuites").textContent =
+    INVENTORY.suites.console + " run live over JSON-RPC, " +
+    INVENTORY.suites.rule + " pin rule-pack figures, " +
+    INVENTORY.suites.conformance + " are optimizer invariants.";
+  $("#invfilter").oninput = (e) => renderInventory(e.target.value);
+  renderInventory("");
+}
+
+async function runSuite() {
+  const button = $("#runsuite");
+  button.disabled = true;
+  $("#suitesum").textContent = "starting fresh servers\u2026";
+  $("#suiteout").textContent = "";
+  try {
+    const report = await (await fetch("/api/console/suite")).json();
+    if (report.error) { $("#suitesum").textContent = report.error; return; }
+    $("#suitesum").textContent = report.passed + "/" + report.total + " as documented";
+    const table = el("table");
+    report.results.forEach(r => {
+      const tr = el("tr");
+      const td = el("td");
+      td.appendChild(el("span", "chip " + (r.ok ? "ok" : "stop"),
+                        r.ok ? "pass" : "fail"));
+      tr.appendChild(td);
+      tr.appendChild(el("td", null, r.title || r.id));
+      tr.appendChild(el("td", "mono sub", r.actual));
+      table.appendChild(tr);
+    });
+    $("#suiteout").appendChild(table);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+const serverTools = {};
+
+async function loadServers() {
+  const host = $("#serverlist");
+  if (host.dataset.loaded) return;
+  host.textContent = "starting the servers\u2026";
+  const servers = await (await fetch("/api/console/servers")).json();
+  host.textContent = "";
+  host.dataset.loaded = "1";
+  servers.forEach(s => {
+    serverTools[s.key] = s.tools || [];
+    const c = card(s.key);
+    const kv = el("div", "kv");
+    [["command", s.command],
+     ["identity", s.needs_identity ? "required" : "none needed"],
+     ["status", s.running ? "running" : "would not start"]].forEach(([k, v]) => {
+      kv.appendChild(el("div", null, k));
+      kv.appendChild(el("div", "mono", esc(v)));
+    });
+    c.appendChild(kv);
+    if (!s.running) {
+      c.appendChild(el("div", "banner stop", s.error || "no tools"));
+      host.appendChild(c);
+      return;
+    }
+    if (s.instructions) c.appendChild(el("div", "why", s.instructions));
+    s.tools.forEach(t => {
+      const row = el("div", "tool-row");
+      const left = el("div");
+      left.appendChild(el("div", "mono", t.name));
+      left.appendChild(el("div", "sub", t.description));
+      row.appendChild(left);
+      const go = el("button", "go", "Call");
+      go.type = "button";
+      go.onclick = () => openToolForm(s.key, t);
+      row.appendChild(go);
+      c.appendChild(row);
+    });
+    host.appendChild(c);
+  });
+}
+
+function openToolForm(serverKey, tool, seedValues) {
+  const out = $("#toolout");
+  out.textContent = "";
+  const c = card(serverKey + " \u00b7 " + tool.name);
+  c.appendChild(el("div", "sub", tool.description));
+  const schema = tool.inputSchema || {};
+  const required = new Set(schema.required || []);
+  const area = el("textarea");
+  area.style.cssText =
+    "width:100%;min-height:150px;font-family:var(--mono);font-size:12px;" +
+    "padding:8px;border:1px solid var(--line);border-radius:6px;" +
+    "background:var(--card);color:var(--ink)";
+  // Seed the body from the published schema so the form shows exactly the
+  // fields the server declared, not a guess at them. An explicit seed wins:
+  // it carries the tool's own example defaults through from the Ask tab.
+  const seed = {};
+  Object.entries(schema.properties || {}).forEach(([name, field]) => {
+    seed[name] = field.enum ? field.enum[0] : (field.type === "object" ? {} : "");
+  });
+  area.value = JSON.stringify(seedValues || seed, null, 1);
+  c.appendChild(el("div", "sub", required.size
+    ? "Required: " + [...required].join(", ") : "No required fields."));
+  c.appendChild(area);
+  const go = el("button", "go", "Send");
+  go.type = "button";
+  go.style.marginTop = "10px";
+  const result = el("div");
+  go.onclick = async () => {
+    result.textContent = "";
+    let args;
+    try { args = JSON.parse(area.value); }
+    catch (e) { result.appendChild(el("div", "banner stop", "not valid JSON: " + e.message));
+                return; }
+    const r = await (await fetch("/api/console/call", {
+      method: "POST", body: JSON.stringify({ server: serverKey, tool: tool.name,
+                                             arguments: args })
+    })).json();
+    if (r.error) { result.appendChild(el("div", "banner stop", r.error)); return; }
+    const envelope = r.result.envelope;
+    const status = envelope ? (envelope.code || envelope.status) : "transport error";
+    const good = envelope && VERDICT[envelope.status];
+    result.appendChild(el("div", "banner " + (good ? "ok" : "warn"), status));
+    const pre = el("pre");
+    pre.style.cssText = "font-size:11px;overflow-x:auto;white-space:pre-wrap";
+    pre.textContent = JSON.stringify(envelope ?? r.result.raw, null, 1);
+    result.appendChild(pre);
+    if (r.frames?.length) result.appendChild(frames(r.frames));
+  };
+  c.appendChild(go);
+  c.appendChild(result);
+  out.appendChild(c);
+  out.scrollIntoView({ block: "start" });
+}
+
+async function boot() {
+  const scenarios = await (await fetch("/api/scenarios")).json();
+  const list = $("#list");
+  scenarios.forEach(s => {
+    const b = el("button", "scenario");
+    b.type = "button";
+    b.appendChild(el("div", "t", s.title));
+    b.appendChild(el("div", "sub", s.why));
+    b.onclick = () => run(s.id, b);
+    list.appendChild(b);
+  });
+
+  $("#smoke").onclick = runSmoke;
+  buildCalculators();
+
+  const caps = await (await fetch("/api/capabilities")).json();
+  const box = $("#caps");
+  box.textContent = "";
+  box.className = "";
+  const live = caps.engines.filter(e => e.status === "implemented");
+  const planned = caps.engines.filter(e => e.status !== "implemented");
+
+  box.appendChild(el("div", "sub", "Available now"));
+  live.forEach(e => {
+    const row = el("div");
+    row.style.margin = "5px 0";
+    row.appendChild(el("span", "chip ok", "available"));
+    row.appendChild(el("span", "mono", " " + e.engine_id));
+    // Whether an engine proves its answer is the sharpest distinction between
+    // the ones listed here, so it is shown rather than buried in limitations.
+    if (e.claims_optimality)
+      row.appendChild(el("span", "chip info", " proves optimality"));
+    row.appendChild(el("div", "sub", (e.scopes || []).join(", ")));
+    if (e.limitations?.length)
+      row.appendChild(el("div", "sub", e.limitations[0]));
+    box.appendChild(row);
+  });
+
+  const later = el("details");
+  later.style.marginTop = "10px";
+  later.appendChild(el("summary", null, `Not built yet (${planned.length})`));
+  planned.forEach(e => {
+    const row = el("div", "sub");
+    row.style.margin = "5px 0";
+    row.textContent = e.engine_id + " — " + (e.limitations?.[0] || e.status);
+    later.appendChild(row);
+  });
+  box.appendChild(later);
+}
+
+async function buildCalculators() {
+  const specs = await (await fetch("/api/calculators")).json();
+  const host = $("#calcs");
+  host.textContent = "";
+  host.className = "calcgrid";
+
+  specs.forEach(spec => {
+    const card = el("div", "calc");
+    card.appendChild(el("h3", null, spec.title));
+    card.appendChild(el("div", "s", spec.summary));
+
+    const inputs = {};
+    spec.fields.forEach(f => {
+      const row = el("div", "row");
+      row.appendChild(el("label", null, f.label));
+      let control;
+      if (f.type === "select") {
+        control = el("select");
+        f.options.forEach(o => {
+          const opt = el("option", null, o);
+          opt.value = o;
+          control.appendChild(opt);
+        });
+      } else {
+        control = el("input");
+        control.setAttribute("inputmode", "decimal");
+        control.placeholder = "0";
+      }
+      control.value = f.default ?? "";
+      inputs[f.name] = control;
+      row.appendChild(control);
+      card.appendChild(row);
+    });
+
+    const result = el("div", "result");
+    const go = el("button", "go", "Calculate");
+    go.type = "button";
+    go.onclick = async () => {
+      const body = {};
+      Object.entries(inputs).forEach(([k, c]) => { body[k] = c.value; });
+      // Figures go in the body, never the URL: a query string would land in
+      // the access log and the browser history.
+      const response = await fetch("/api/calc/" + spec.id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      result.textContent = "";
+      result.className = "result on";
+      if (!response.ok) {
+        result.appendChild(el("div", "err", data.error || "could not calculate"));
+        return;
+      }
+      renderCalcResult(spec.id, data, result);
+    };
+    card.appendChild(go);
+    card.appendChild(result);
+    host.appendChild(card);
+  });
+}
+
+function line(box, label, value) {
+  const row = el("div", "line");
+  row.appendChild(el("span", null, label));
+  row.appendChild(el("span", "mono", value));
+  box.appendChild(row);
+}
+
+function renderCalcResult(id, d, box) {
+  if (id === "federal") {
+    box.appendChild(el("div", "big", "$" + d.total_tax));
+    line(box, "tax on ordinary income", "$" + d.ordinary.tax);
+    d.ordinary.bands.forEach(b => line(box, "  " + b.rate + " on $" + b.income_in_band,
+                                       "$" + b.tax));
+    if (Number(d.capital_gain.net_long_term_gain) > 0) {
+      line(box, "tax on gains (" + d.capital_gain.blended_rate + ")", "$" + d.capital_gain.tax);
+      d.capital_gain.bands.forEach(b => line(box, "  " + b.rate + " on $" + b.income_in_band,
+                                             "$" + b.tax));
+    }
+    if (Number(d.niit.tax) > 0) line(box, "net investment income tax", "$" + d.niit.tax);
+    line(box, "marginal / effective", d.ordinary.marginal_rate + " / " + d.effective_rate);
+    line(box, "rules", d.rule_bundle_ref);
+  } else if (id === "capgains") {
+    box.appendChild(el("div", "big", "$" + d.tax));
+    d.bands.forEach(b => line(box, b.rate + " on $" + b.income_in_band, "$" + b.tax));
+    line(box, "blended rate", d.blended_rate);
+  } else if (id === "amt") {
+    box.appendChild(el("div", "big", "$" + d.amt_payable));
+    line(box, d.applies ? "AMT applies" : "no AMT — regular tax is higher", "");
+    line(box, "effective exemption", "$" + d.effective_exemption);
+    if (Number(d.exemption_lost_to_phaseout) > 0)
+      line(box, "  lost to phase-out", "-$" + d.exemption_lost_to_phaseout);
+    line(box, "AMT base", "$" + d.amt_base);
+    d.bands.forEach(b => line(box, "  " + b.rate + " on $" + b.income_in_band, "$" + b.tax));
+    line(box, "tentative minimum tax", "$" + d.tentative_minimum_tax);
+    line(box, "less regular tax", "-$" + d.regular_tax);
+  } else if (id === "qbi") {
+    box.appendChild(el("div", "big", "$" + d.deduction));
+    line(box, "20% of QBI", "$" + d.tentative_deduction);
+    line(box, "wage and property limit", "$" + d.wage_and_property_limit);
+    line(box, "20% of taxable income less gains", "$" + d.taxable_income_limit);
+    line(box, "phase-in progress", d.phase_in_ratio);
+    line(box, "binding limit", d.limit_applied);
+    (d.notes || []).forEach(n => line(box, n, ""));
+  } else if (id === "niit") {
+    box.appendChild(el("div", "big", "$" + d.tax));
+    line(box, "threshold", "$" + d.threshold);
+    line(box, "amount subject to the surtax", "$" + d.amount_subject);
+  } else {
+    box.appendChild(el("div", "big", "$" + d.deductible_this_year));
+    line(box, "deductible this year", "$" + d.deductible_this_year);
+    line(box, "carried forward", "$" + d.carryforward);
+  }
+  const note = el("div", "line");
+  note.appendChild(el("span", null, "Estimate for professional review. Not tax advice."));
+  box.appendChild(note);
+}
+
+async function runSmoke() {
+  const box = $("#smokeout");
+  box.textContent = "";
+  box.appendChild(el("div", "sub", "running…"));
+  const r = await (await fetch("/api/smoke")).json();
+  box.textContent = "";
+  const head = el("div");
+  head.appendChild(el("span", "chip " + (r.failed ? "stop" : "ok"),
+    r.failed ? r.failed + " failed" : r.passed + "/" + r.total + " passed"));
+  box.appendChild(head);
+  r.results.forEach(x => {
+    const row = el("div");
+    row.style.marginTop = "6px";
+    row.appendChild(el("span", "chip " + (x.ok ? "ok" : "stop"), x.ok ? "pass" : "fail"));
+    row.appendChild(el("span", "sub", " " + x.title));
+    if (!x.ok) row.appendChild(el("div", "sub mono",
+      "expected " + x.expected + ", got " + x.actual + (x.detail ? " — " + x.detail : "")));
+    box.appendChild(row);
+  });
+}
+
+async function run(id, button) {
+  document.querySelectorAll(".scenario").forEach(b => b.removeAttribute("aria-current"));
+  button.setAttribute("aria-current", "true");
+  const out = $("#out");
+  out.textContent = "";
+  out.appendChild(el("div", "empty", "running…"));
+  const data = await (await fetch("/api/run/" + id)).json();
+  render(data);
+}
+
+function card(title) {
+  const c = el("div", "card");
+  c.appendChild(el("h2", null, title));
+  return c;
+}
+
+function render(d) {
+  const out = $("#out");
+  out.textContent = "";
+  const env = d.envelope, kind = KIND[env.status] || "warn";
+
+  const banner = el("div", "banner " + kind);
+  banner.appendChild(el("div", "s",
+    (SAYS[env.status] || env.status) + (env.code ? " — " + env.code : "")));
+  if (env.message) banner.appendChild(el("div", "sub", env.message));
+  banner.appendChild(el("div", "why", d.scenario.why));
+  out.appendChild(banner);
+
+  // what the run proposes, before anything qualifying it
+  if (d.result) {
+    const r = d.result, c = card("Result");
+    const kv = el("div", "kv");
+    [["cash raised", r.cash_raised], ["net realized gain", r.net_gain],
+     ["short term", r.short_term_gain], ["long term", r.long_term_gain],
+     ["disallowed by wash sale", r.disallowed_loss]]
+      .filter(([, v]) => v !== null && v !== undefined)
+      .forEach(([k, v]) => {
+        kv.appendChild(el("div", null, k));
+        kv.appendChild(el("div", "mono", money(v)));
+      });
+    c.appendChild(kv);
+    if (r.trades?.length) {
+      c.appendChild(el("div", "sub", "Proposed sales \u2014 analysis only, nothing is placed:"));
+      const t = el("table");
+      r.trades.forEach(x => {
+        const tr = el("tr");
+        tr.appendChild(el("td", "mono",
+          x.side + " " + Number(x.quantity) + " " + x.security_id));
+        tr.appendChild(el("td", "mono sub",
+          "@ " + money(x.price_per_share) + " \u00b7 " + x.account_id));
+        t.appendChild(tr);
+      });
+      c.appendChild(t);
+    }
+    if (r.held_back?.length)
+      c.appendChild(el("div", "why", "Held back: " +
+        r.held_back.map(h => h.lot_id + " (" + h.reason + ")").join(", ")));
+    out.appendChild(c);
+  }
+
+  // request
+  const req = card("Request");
+  const kv = el("div", "kv");
+  [["template", d.scenario.template], ["execution authorized", String(env.execution_authorized)],
+   ["evidence", env.evidence_ref || "—"]].forEach(([k, v]) => {
+    kv.appendChild(el("div", null, k)); kv.appendChild(el("div", "mono", esc(v)));
+  });
+  req.appendChild(kv);
+  if (env.unresolved_fields?.length) {
+    req.appendChild(el("div", "sub", "Unresolved fields the backend refuses to guess:"));
+    const ul = el("ul", "tight");
+    env.unresolved_fields.forEach(f => ul.appendChild(el("li", "mono", f)));
+    req.appendChild(ul);
+  }
+  if (env.supported_alternative)
+    req.appendChild(el("div", "why", "Alternative: " + env.supported_alternative));
+  if (env.data?.diagnostics?.cash_shortfall)
+    req.appendChild(el("div", "why", "Short of the target by " +
+      money(env.data.diagnostics.cash_shortfall) + "."));
+  out.appendChild(req);
+
+  // validation
+  if (env.validation && Object.keys(env.validation).length) {
+    const c = card("Validation");
+    const t = el("table");
+    Object.entries(env.validation).sort().forEach(([k, v]) => {
+      const tr = el("tr");
+      tr.appendChild(el("td", "mono", k));
+      const td = el("td");
+      td.appendChild(el("span", "chip " + (v === "passed" ? "ok" : v === "failed" ? "stop" : "warn"), v));
+      tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    c.appendChild(t);
+    out.appendChild(c);
+  }
+
+  // limitations
+  if (env.limitations?.length) {
+    const c = card("Limitations — what the calculation could not see");
+    const t = el("table");
+    env.limitations.forEach(l => {
+      const tr = el("tr");
+      tr.appendChild(el("td", "mono", l.code));
+      const refs = Object.entries(l.refs || {}).map(([k, v]) => k + "=" + v).join(", ");
+      const td = el("td");
+      td.appendChild(el("div", null, l.impact));
+      if (refs) td.appendChild(el("div", "sub mono", refs));
+      tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    c.appendChild(t);
+    out.appendChild(c);
+  }
+
+  // coordination
+  const g = d.diagnostics;
+  if (g && g.coordination) {
+    const c = card("Coordination");
+    const kv2 = el("div", "kv");
+    [["method", g.coordination], ["order rule", g.order_rule],
+     ["order", (g.allocation_order || []).join(" → ")],
+     ["order dependent", String(g.order_dependent)],
+     ["optimality claimed", String(g.optimality_claimed)]].forEach(([k, v]) => {
+      kv2.appendChild(el("div", null, k)); kv2.appendChild(el("div", null, esc(v)));
+    });
+    c.appendChild(kv2);
+
+    if (g.per_unit?.length) {
+      const t = el("table");
+      const hr = el("tr");
+      ["unit", "trades", "cash", "budget", "note"].forEach(h => hr.appendChild(el("th", null, h)));
+      t.appendChild(hr);
+      g.per_unit.forEach(u => {
+        const tr = el("tr");
+        tr.appendChild(el("td", "mono", u.unit_id));
+        tr.appendChild(el("td", null, u.skipped ? "—" : String(u.trades)));
+        tr.appendChild(el("td", "mono", u.cash_raised ? money(u.cash_raised) : "—"));
+        tr.appendChild(el("td", "mono", u.budget_consumed ? money(u.budget_consumed) : "—"));
+        tr.appendChild(el("td", "sub", u.skipped || ""));
+        t.appendChild(tr);
+      });
+      c.appendChild(t);
+    }
+
+    (g.cross_unit_conflicts_prevented || []).forEach(x => {
+      const p = el("div", "why");
+      p.textContent = "Prevented: " + x.selling_unit + " selling " + x.lot_id +
+        " would be washed by " + (x.conflicting_units || []).join(", ");
+      c.appendChild(p);
+    });
+
+    const gap = g.optimality_gap;
+    if (gap) {
+      const box = el("div");
+      box.style.marginTop = "10px";
+      if (gap.provably_optimal) {
+        box.appendChild(el("span", "chip ok", "provably optimal"));
+        box.appendChild(el("div", "why",
+          "No reallocation of this budget raises more cash."));
+      } else {
+        box.appendChild(el("span", "chip warn",
+          "gap " + money(gap.gap) + " (" + gap.gap_percent + ")"));
+        box.appendChild(el("div", "why", "Achieved " + money(gap.achieved_cash) +
+          " against a " + money(gap.bound_cash) + " ceiling. " + gap.interpretation));
+      }
+      c.appendChild(box);
+    }
+    out.appendChild(c);
+  }
+
+  // provenance
+  if (d.manifest) {
+    const c = card("Provenance");
+    const kv3 = el("div", "kv");
+    [["tax rules", d.manifest.rule_bundle_ref || "UNPINNED"],
+     ["rule hash", (d.manifest.rule_bundle_hash || "").slice(0, 26) + "…"],
+     ["snapshot", env.snapshot_ref || "—"],
+     ["engine", (d.manifest.optimizer?.name || "—") + " " + (d.manifest.optimizer?.version || "")],
+     ["package", "taxagent " + d.manifest.package_version]].forEach(([k, v]) => {
+      kv3.appendChild(el("div", null, k)); kv3.appendChild(el("div", "mono", esc(v)));
+    });
+    c.appendChild(kv3);
+    out.appendChild(c);
+  }
+
+  if (d.brief) {
+    const c = card("Review brief");
+    const det = el("details");
+    det.appendChild(el("summary", null, "Show the brief a reviewer receives"));
+    const pre = el("pre");
+    pre.textContent = d.brief;
+    det.appendChild(pre);
+    c.appendChild(det);
+    out.appendChild(c);
+  }
+
+  out.appendChild(el("div", "foot",
+    "Prepared for professional review. Not tax advice. No trade is authorized."));
+}
+
+document.querySelectorAll("#tabs button").forEach(b =>
+  b.onclick = () => showTab(b.dataset.tab));
+$("#runsuite").onclick = runSuite;
+$("#asksend").onclick = () => ask($("#ask").value);
+$("#ask").addEventListener("keydown", e => { if (e.key === "Enter") ask($("#ask").value); });
+loadAsk();
+loadCases();
+boot();
+</script>
+</body>
+</html>

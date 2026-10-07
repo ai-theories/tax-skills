@@ -1,0 +1,50 @@
+# Federal international parameters for 2026.
+schema_version: "1.0"
+bundle_id: us-federal-international-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-05"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-05"
+  transcription_verified_against: >-
+    Rev. Proc. 2025-32 (https://www.irs.gov/pub/irs-drop/rp-25-32.pdf),
+    sections 4.39 and 4.47.
+  methodology_reviewed_by: unassigned
+  removed: >-
+    The section 2801 covered-expatriate exception was removed: no engine
+    computes the tax on covered gifts, so the figure had nothing reading it.
+  note: >
+    The exclusion and reporting thresholds were read from the revenue
+    procedure directly.
+
+    The housing cost base and the bona fide residence and physical presence
+    tests are NOT in this pack. Eligibility for the exclusion turns on facts
+    this deployment cannot see, so the engine computes the limit and refuses
+    to assert that a taxpayer qualifies for it. Foreign tax credit, GILTI,
+    subpart F, treaty positions and FBAR are outside this pack entirely.
+
+rules:
+  foreign_earned_income_exclusion:
+    authority: "IRC 911(b)(2)(D)(i); Rev. Proc. 2025-32 sec. 4.39"
+    legal_effective_from: "2026-01-01"
+    value: "132900"
+
+  housing_base_fraction:
+    # The base housing amount is 16% of the exclusion, per section 911(c)(1)(B)(i),
+    # computed from the exclusion above rather than stored as a dollar figure
+    # so the two can never disagree.
+    authority: "IRC 911(c)(1)(B)(i)"
+    legal_effective_from: "2026-01-01"
+    value: "0.16"
+
+  housing_limit_fraction:
+    authority: "IRC 911(c)(2)(A)(ii)"
+    legal_effective_from: "2026-01-01"
+    value: "0.30"
+
+  foreign_gift_reporting_threshold:
+    authority: "IRC 6039F; Rev. Proc. 2025-32 sec. 4.47"
+    legal_effective_from: "2026-01-01"
+    value: "20573"
+

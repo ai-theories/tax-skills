@@ -1,0 +1,30 @@
+{
+  "accounts": [
+    {"account_id": "acct_uma", "tax_unit_id": "tu_patel", "registration": "TAXABLE", "custodian": "Schwab", "owner_ref": "owner_patel"}
+  ],
+  "sleeves": [
+    {"sleeve_id": "sleeve_alpha", "account_id": "acct_uma", "manager_ref": "manager_alpha", "model_ref": "model_large_cap_growth", "target_weight": "0.50"},
+    {"sleeve_id": "sleeve_beta", "account_id": "acct_uma", "manager_ref": "manager_beta", "model_ref": "model_core_equity", "target_weight": "0.50"}
+  ],
+  "sleeve_assignments": [
+    {"lot_id": "lot_a_arkk", "sleeve_id": "sleeve_alpha"},
+    {"lot_id": "lot_a_vti", "sleeve_id": "sleeve_alpha"},
+    {"lot_id": "lot_b_aapl", "sleeve_id": "sleeve_beta"},
+    {"lot_id": "lot_b_vti", "sleeve_id": "sleeve_beta"}
+  ],
+  "lots": [
+    {"lot_id": "lot_a_arkk", "account_id": "acct_uma", "security_id": "ARKK", "quantity": "500", "acquisition_date": "2025-02-10", "basis": "38000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true},
+    {"lot_id": "lot_a_vti", "account_id": "acct_uma", "security_id": "VTI", "quantity": "150", "acquisition_date": "2025-11-03", "basis": "42000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true},
+    {"lot_id": "lot_b_aapl", "account_id": "acct_uma", "security_id": "AAPL", "quantity": "600", "acquisition_date": "2019-02-20", "basis": "48000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true},
+    {"lot_id": "lot_b_vti", "account_id": "acct_uma", "security_id": "VTI", "quantity": "200", "acquisition_date": "2021-05-12", "basis": "36000.00", "basis_source": "CUSTODIAN_COVERED", "covered": true}
+  ],
+  "transactions": [],
+  "coverage": [
+    {"account_id": "acct_uma", "start": "2019-01-01", "end": "2026-09-15", "source_ref": "schwab_uma_export"}
+  ],
+  "reported_positions": [
+    {"account_id": "acct_uma", "security_id": "ARKK", "quantity": "500"},
+    {"account_id": "acct_uma", "security_id": "AAPL", "quantity": "600"},
+    {"account_id": "acct_uma", "security_id": "VTI", "quantity": "350"}
+  ]
+}

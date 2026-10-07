@@ -1,0 +1,113 @@
+# Rebalancing. A different objective from harvesting, so these cases run only
+# against the rebalance engine: a harvest selector handed a rebalance would
+# optimise for losses and record the run in evidence as a harvest.
+
+- id: rebal-closes-drift-toward-target
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    AAA is far above its 50% target and CCC is absent. Selling the affordable
+    AAA lot and buying the shortfall moves the portfolio toward target.
+  constraints:
+    gain_budget: {amount: "2000", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {solver_status: optimal, drift_decreases: true}
+
+- id: rebal-never-sells-past-target
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    Even with an unlimited budget, no security is sold below its target weight.
+    Overshooting would close drift on one side and open it on the other.
+  constraints:
+    gain_budget: {amount: "1000000", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {solver_status: optimal, never_sells_past_target: true}
+
+- id: rebal-respects-the-gain-budget
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    A tight gross budget limits which overweight lots can be sold, so drift
+    closes only partly. The budget is never breached to reach the target.
+  constraints:
+    gain_budget: {amount: "1200", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {gross_gains_at_most: "1200", drift_decreases: true}
+
+- id: rebal-zero-budget-still-trades-what-costs-nothing
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    A zero gross budget blocks gain lots but not loss or break-even lots, which
+    consume no gross capacity.
+  constraints:
+    gain_budget: {amount: "0", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {gross_gains_at_most: "0"}
+
+- id: rebal-tolerance-suppresses-small-trades
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    A wide tolerance band leaves every drift inside it, so nothing is traded
+    and the portfolio is left alone.
+  constraints:
+    gain_budget: {amount: "100000", netting: gross_gains}
+    target_allocation:
+      weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}
+      tolerance: "0.60"
+  expect: {trade_count: 0}
+
+- id: rebal-conserves-positions
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted
+  description: >
+    No lot may be sold in a quantity it does not hold, and no lot may appear
+    twice, whatever the objective.
+  constraints:
+    gain_budget: {amount: "100000", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {solver_status: optimal}
+
+- id: rebal-trims-a-combination-that-would-overshoot
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted_splittable
+  description: >
+    Total value is 18,200, so a 50% AAA target leaves AAA 2,900 overweight.
+    Either 6,000 lot alone already exceeds that, so the engine sells neither
+    rather than overshoot.
+    This is the only portfolio shape that exercises the trim, and without it a
+    deliberately broken trim still passed the suite.
+  constraints:
+    gain_budget: {amount: "100000", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.50", BBB: "0.30", CCC: "0.20"}}
+  expect: {never_sells_past_target: true, sells_exclude: [lot_aaa_a, lot_aaa_b]}
+
+- id: rebal-sells-one-of-two-when-only-one-fits
+  category: rebalance
+  adapters: [rebalance-engine]
+  objective: rebalance
+  portfolio_ref: drifted_splittable
+  description: >
+    A 30% AAA target leaves AAA 6,540 overweight. One 6,000 lot fits inside
+    that and a second would overshoot by more than 5,000, so exactly one is
+    sold. This is the case the trim has to get right.
+  constraints:
+    gain_budget: {amount: "100000", netting: gross_gains}
+    target_allocation: {weights: {AAA: "0.30", BBB: "0.35", CCC: "0.35"}}
+  expect: {never_sells_past_target: true, trade_count: 1}

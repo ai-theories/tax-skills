@@ -1,0 +1,42 @@
+# Federal business-entity parameters for 2026.
+schema_version: "1.0"
+bundle_id: us-federal-business-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-05"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-05"
+  transcription_verified_against: >-
+    Rev. Proc. 2025-32 (https://www.irs.gov/pub/irs-drop/rp-25-32.pdf),
+    sections 3.24 and 3.09; 26 U.S.C. section 11(b) for the corporate rate.
+  methodology_reviewed_by: unassigned
+  removed: >-
+    The entity late-filing figures were duplicated here and in the compliance
+    pack. Two copies of a figure is how they come to disagree, so they live
+    only in the compliance pack now. The small-employer health credit wage
+    figure was removed because no engine computes that credit: a rule no
+    engine reads is a claim this deployment cannot back.
+  note: >
+    Section 179 figures and the small-employer health credit figure were read
+    from the revenue procedure. The 21% corporate rate is statutory and flat.
+
+    Not covered: bonus depreciation, the section 163(j) interest limitation,
+    accumulated earnings tax, reasonable-compensation analysis, basis and
+    at-risk limits, and any state entity-level tax. Choosing an entity form is
+    not a calculation and this pack does not pretend otherwise.
+
+rules:
+  corporate_rate:
+    authority: "IRC 11(b)"
+    legal_effective_from: "2018-01-01"
+    value: "0.21"
+
+  section_179:
+    authority: "IRC 179(b); Rev. Proc. 2025-32 sec. 3.24"
+    legal_effective_from: "2026-01-01"
+    value:
+      maximum: "2560000"
+      phaseout_threshold: "4090000"
+      sport_utility_vehicle_limit: "32000"
+

@@ -1,0 +1,23 @@
+{
+  "name": "ai-theories",
+  "owner": {
+    "name": "ai-theories",
+    "url": "https://github.com/ai-theories"
+  },
+  "description": "Open-source Claude Code plugins from ai-theories.",
+  "plugins": [
+    {
+      "name": "tax-agent",
+      "displayName": "Tax Agent",
+      "source": "./",
+      "description": "Claude skills for US investment tax analysis, backed by a deterministic engine and versioned rule packs. Analysis only: no tool places an order or files a return.",
+      "version": "0.1.0",
+      "author": {"name": "ai-theories", "url": "https://github.com/ai-theories"},
+      "homepage": "https://ai-theories.github.io/tax-skills/",
+      "repository": "https://github.com/ai-theories/tax-skills",
+      "license": "Apache-2.0",
+      "category": "finance",
+      "keywords": ["tax", "wash-sale", "tax-loss-harvesting", "capital-gains", "uma", "mcp"]
+    }
+  ]
+}

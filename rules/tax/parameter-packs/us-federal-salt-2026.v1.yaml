@@ -1,0 +1,51 @@
+# The federal cap on deducting state and local tax, for 2026.
+#
+# This pack is federal. It does not hold any state's own tax rules: see the
+# state coverage registry, which is deliberately empty in this deployment.
+schema_version: "1.0"
+bundle_id: us-federal-salt-2026.v1
+jurisdiction: US_FEDERAL
+tax_years: [2026]
+status: reviewed
+knowledge_time: "2026-10-05"
+review:
+  transcription_verified_by: "Claude (automated), 2026-10-05"
+  transcription_verified_against: >-
+    IRS, "Correction to state and local income tax deduction amount in the 2026
+    Form 1040-ES"
+    (https://www.irs.gov/forms-pubs/correction-to-state-and-local-income-tax-deduction-amount-in-the-2026-form-1040-es)
+  methodology_reviewed_by: unassigned
+  note: >
+    The cap, the phase-down threshold and the floor were read from the IRS
+    page, which states all three for 2026 and for married filing separately.
+
+    The 30 percent phase-down rate is NOT stated there. It is confirmed
+    arithmetically: the rate that carries the cap down to the floor exactly at
+    the published complete-phase-down point is 30 percent, and it holds for
+    both filing statuses independently. A test pins this derivation.
+
+    What this does not cover: whether a given tax is deductible at all, the
+    pass-through entity tax workarounds many states offer, and the reversion
+    to a flat $10,000 cap scheduled for 2030.
+
+rules:
+  salt_cap:
+    authority: "IRC 164(b)(6); OBBBA sec. 70120; IRS 2026 Form 1040-ES correction"
+    legal_effective_from: "2026-01-01"
+    value:
+      cap:
+        MFJ: "40400"
+        SINGLE: "40400"
+        HOH: "40400"
+        MFS: "20200"
+      phase_down_threshold:
+        MFJ: "505000"
+        SINGLE: "505000"
+        HOH: "505000"
+        MFS: "252500"
+      phase_down_rate: "0.30"
+      floor:
+        MFJ: "10000"
+        SINGLE: "10000"
+        HOH: "10000"
+        MFS: "5000"

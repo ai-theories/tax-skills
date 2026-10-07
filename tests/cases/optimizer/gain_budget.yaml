@@ -1,0 +1,69 @@
+# The gain budget is the scarce resource. Netting basis changes the answer.
+- {id: budget-gross-blocks-the-gain-lot, category: gain_budget, portfolio_ref: mixed,
+   description: "Under gross netting a 5,000 gain cannot fit a 1,000 budget, however much loss is harvested.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {sells_exclude: [lot_gain_big], gross_gains_at_most: "1000"}}
+- {id: budget-net-allows-offset, category: gain_budget, portfolio_ref: mixed,
+   description: "Under net netting the harvested loss creates room for the gain.",
+   constraints: {cash_target: "30000", gain_budget: {amount: "1000", netting: net_gains}},
+   expect: {net_gain_at_most: "1000"}}
+- {id: budget-zero-gross-permits-losses-only, category: gain_budget, portfolio_ref: mixed,
+   description: "A zero gross budget still allows loss harvesting, which consumes none of it.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "0", netting: gross_gains}},
+   expect: {gross_gains_at_most: "0", solver_status: feasible}}
+- {id: budget-zero-net-permits-offsetting, category: gain_budget, portfolio_ref: mixed,
+   description: "A zero net budget permits a gain exactly offset by a loss.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "0", netting: net_gains}},
+   expect: {net_gain_at_most: "0"}}
+- {id: budget-external-realized-reduces-room, category: gain_budget, portfolio_ref: gains_only,
+   description: "Gains already realized elsewhere consume the same allowance.",
+   constraints: {cash_target: "20000",
+                 gain_budget: {amount: "5000", netting: gross_gains, external_realized: "4500"}},
+   expect: {gross_gains_at_most: "500"}}
+- {id: budget-external-exhausts-it, category: gain_budget, portfolio_ref: gains_only,
+   description: "When prior gains have used the whole budget, no further gain fits.",
+   constraints: {cash_target: "20000",
+                 gain_budget: {amount: "5000", netting: gross_gains, external_realized: "5000"}},
+   expect: {gross_gains_at_most: "0"}}
+- {id: budget-exactly-met-is-within-it, category: gain_budget, portfolio_ref: gains_only,
+   description: "A gain equal to the budget is within it; the limit is not strict.",
+   constraints: {cash_target: "15000", gain_budget: {amount: "5000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "5000"}}
+- {id: budget-one-cent-short, category: gain_budget, portfolio_ref: gains_only,
+   description: "A budget a cent below the gain must exclude that lot.",
+   constraints: {cash_target: "15000", gain_budget: {amount: "4999.99", netting: gross_gains}},
+   expect: {sells_exclude: [lot_gain_big]}}
+- {id: budget-small-gain-fits, category: gain_budget, portfolio_ref: gains_only,
+   description: "The smaller gain lot fits a budget the larger one cannot.",
+   constraints: {cash_target: "5000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "1000"}}
+- {id: budget-generous-allows-everything, category: gain_budget, portfolio_ref: mixed,
+   description: "A budget larger than every gain imposes no restriction.",
+   constraints: {cash_target: "34200", gain_budget: {amount: "100000"}},
+   expect: {solver_status: feasible, cash_at_least: "34200"}}
+- {id: budget-losses-do-not-consume-gross, category: gain_budget, portfolio_ref: losses_only,
+   description: "Harvesting losses under gross netting leaves the budget untouched.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "10", netting: gross_gains}},
+   expect: {solver_status: feasible, gross_gains_at_most: "0"}}
+- {id: budget-net-can-go-negative, category: gain_budget, portfolio_ref: losses_only,
+   description: "A net figure below zero is a harvested loss, not a breach.",
+   constraints: {cash_target: "14200", gain_budget: {amount: "1000", netting: net_gains}},
+   expect: {net_gain_at_most: "0"}}
+- {id: budget-soft-limit-is-still-reported, category: gain_budget, portfolio_ref: gains_only,
+   description: "A budget marked soft may be exceeded, but the figures must still recompute.",
+   constraints: {cash_target: "20000",
+                 gain_budget: {amount: "1000", netting: gross_gains, hard: false}},
+   expect: {}}
+- {id: budget-with-no-cash-target, category: gain_budget, portfolio_ref: mixed,
+   description: "A budget alone still binds when there is no cash objective.",
+   constraints: {gain_budget: {amount: "500", netting: gross_gains}},
+   expect: {gross_gains_at_most: "500"}}
+- {id: budget-efficiency-matters, category: gain_budget, portfolio_ref: efficiency,
+   description: "Two lots raise cash at very different budget cost per dollar.",
+   constraints: {cash_target: "15000", gain_budget: {amount: "1000", netting: gross_gains}},
+   expect: {gross_gains_at_most: "1000"}}
+- {id: budget-period-is-recorded, category: gain_budget, portfolio_ref: mixed,
+   description: "A budget carries the period it applies to, which the run must respect.",
+   constraints: {cash_target: "6000",
+                 gain_budget: {amount: "5000", netting: net_gains, period: "2026-Q4"}},
+   expect: {solver_status: feasible}}

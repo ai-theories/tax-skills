@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/validation-result.schema.json",
+  "title": "ValidationResult",
+  "type": "object",
+  "required": [
+    "checks",
+    "violations",
+    "passed"
+  ],
+  "properties": {
+    "calculation_version": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": {
+        "enum": [
+          "passed",
+          "failed",
+          "incomplete"
+        ]
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "check",
+          "message"
+        ]
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "recomputed": {
+      "type": "object"
+    },
+    "passed": {
+      "type": "boolean"
+    }
+  }
+}

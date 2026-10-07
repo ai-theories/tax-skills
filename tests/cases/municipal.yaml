@@ -1,0 +1,211 @@
+# Municipal bonds. Every figure below was computed by hand from the statute
+# before the engine was run.
+
+- id: muni-naive-formula-understates-for-a-high-earner
+  rules: [tax_exempt_interest_in_net_investment_income]
+  description: >
+    A 3.5% in-state muni for a 37% federal, 9.3% state, surtax-paying holder.
+    The rate avoided is 0.37 + 0.038 + 0.093 = 0.501, so the equivalent yield
+    is 0.035/0.499 = 7.014%. Federal alone gives 0.035/0.63 = 5.556%, which
+    understates by nearly a point and a half.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: true
+  expect:
+    effective_tax_rate_avoided: "50.100%"
+    taxable_equivalent_yield: "7.014%"
+    naive_federal_only: "5.556%"
+
+- id: muni-out-of-state-bond-avoids-less
+  rules: [tax_exempt_interest_in_net_investment_income]
+  description: >
+    The same bond bought out of state is federally exempt and state taxable,
+    so only 0.37 + 0.038 = 0.408 is avoided and the equivalent yield falls to
+    0.035/0.592 = 5.912%.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    state_exempt: false
+    niit_applies: true
+  expect: {effective_tax_rate_avoided: "40.800%", taxable_equivalent_yield: "5.912%"}
+
+- id: muni-surtax-is-part-of-what-is-avoided
+  rules: [tax_exempt_interest_in_net_investment_income]
+  description: >
+    Without the surtax the same in-state bond avoids 0.463 and yields an
+    equivalent 6.518%. The 3.8 points are worth half a point of yield.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: false
+  expect: {effective_tax_rate_avoided: "46.300%", taxable_equivalent_yield: "6.518%"}
+
+- id: muni-private-activity-in-amt-has-no-advantage
+  rules: [private_activity_amt_preference]
+  description: >
+    A private activity bond held by a taxpayer in AMT: the interest is a
+    preference item under section 57(a)(5), so nothing is avoided and the
+    equivalent yield is the stated 3.5%.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: true
+    private_activity: true
+    amt_applies: true
+  expect: {effective_tax_rate_avoided: "0.000%", taxable_equivalent_yield: "3.500%"}
+
+- id: muni-private-activity-outside-amt-keeps-the-advantage
+  rules: [private_activity_amt_preference]
+  description: >
+    The same bond for a taxpayer not in AMT is exempt as normal. The result
+    carries a warning rather than a different number.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: true
+    private_activity: true
+  expect: {taxable_equivalent_yield: "7.014%"}
+
+- id: muni-discount-above-the-threshold-is-ordinary-income
+  rules: [de_minimis_fraction, market_discount_character]
+  description: >
+    1,000 redemption, 10 complete years: the threshold is 1000 x 0.0025 x 10 =
+    25. A 50 discount is above it, so accrued market discount is ordinary
+    income on disposition, not capital gain.
+  calc: muni_discount
+  given: {purchase_price: "950", redemption_price: "1000", years_to_maturity: 10}
+  expect:
+    de_minimis_threshold: "25.00"
+    market_discount: "50.00"
+    is_de_minimis: false
+    character: ordinary_income
+    ordinary_income_on_disposition: "50.00"
+
+- id: muni-small-discount-stays-capital
+  rules: [de_minimis_fraction, de_minimis_discount_character]
+  description: >
+    The same bond bought at 980: a 20 discount against a 25 threshold is de
+    minimis, treated as zero, and the gain on redemption is capital.
+  calc: muni_discount
+  given: {purchase_price: "980", redemption_price: "1000", years_to_maturity: 10}
+  expect:
+    is_de_minimis: true
+    character: capital_gain
+    capital_gain_portion: "20.00"
+    ordinary_income_on_disposition: "0.00"
+
+- id: muni-a-short-bond-tolerates-far-less-discount
+  rules: [de_minimis_fraction]
+  description: >
+    Two complete years gives a threshold of only 1000 x 0.0025 x 2 = 5, so the
+    same 20 discount that was de minimis over ten years is ordinary income
+    over two. Maturity drives this more than price does.
+  calc: muni_discount
+  given: {purchase_price: "980", redemption_price: "1000", years_to_maturity: 2}
+  expect: {de_minimis_threshold: "5.00", is_de_minimis: false, character: ordinary_income}
+
+- id: muni-a-discount-exactly-at-the-threshold-is-not-de-minimis
+  rules: [de_minimis_fraction]
+  description: >
+    The statute says "less than", so a 25 discount against a 25 threshold
+    fails the test. The boundary matters because it is where advice changes.
+  calc: muni_discount
+  given: {purchase_price: "975", redemption_price: "1000", years_to_maturity: 10}
+  expect: {is_de_minimis: false, character: ordinary_income}
+
+- id: muni-bought-at-par-has-no-discount
+  rules: [de_minimis_fraction]
+  description: >
+    No discount at all, so no character question arises and nothing accrues.
+  calc: muni_discount
+  given: {purchase_price: "1000", redemption_price: "1000", years_to_maturity: 10}
+  expect: {market_discount: "0.00", character: none}
+
+- id: muni-premium-buys-no-deduction
+  rules: [premium_deduction_allowed, premium_amortization_election]
+  description: >
+    1,050 for a bond redeeming at 1,000 over ten years: 50 of premium, 5 a
+    year, and section 171(a)(2) allows no deduction for any of it.
+  calc: muni_premium
+  given: {purchase_price: "1050", redemption_price: "1000", years_to_maturity: 10}
+  expect:
+    premium: "50.00"
+    annual_amortization: "5.00"
+    deduction_allowed: "0.00"
+
+- id: muni-premium-leaves-no-loss-at-maturity
+  rules: [premium_basis_adjustment]
+  description: >
+    Basis falls by the amortization each year, so at maturity it equals the
+    1,000 redemption price and there is no loss to claim. The holder who
+    expected one has already had the benefit.
+  calc: muni_premium
+  given: {purchase_price: "1050", redemption_price: "1000", years_to_maturity: 10}
+  expect: {adjusted_basis_at_maturity: "1000.00", loss_at_maturity: "0.00"}
+
+- id: muni-no-premium-when-bought-at-a-discount
+  rules: [premium_deduction_allowed]
+  description: >
+    Bought below par, so there is no premium to amortize. The discount has its
+    own treatment and is not computed by this calculation.
+  calc: muni_premium
+  given: {purchase_price: "950", redemption_price: "1000", years_to_maturity: 10}
+  expect: {premium: "0.00", annual_amortization: "0.00"}
+
+- id: muni-exempt-interest-still-reaches-social-security
+  rules: [tax_exempt_interest_in_provisional_income]
+  description: >
+    The pack records that exempt interest is added back under section
+    86(b)(2)(B) when deciding how much Social Security is taxable. No engine
+    computes that, so the result carries it as a note rather than a figure.
+  calc: muni_yield
+  given: {municipal_yield: "0.035", federal_rate: "0.37"}
+  expect: {taxable_equivalent_yield: "5.556%"}
+
+- id: muni-private-activity-issued-in-2009-escapes-the-preference
+  rules: [private_activity_amt_exempt_issue_years]
+  description: >
+    Section 57(a)(5)(C)(vi) excepts private activity bonds issued in 2009 and
+    2010. A 2009 bond held by a taxpayer in AMT keeps its exemption, so the
+    full 50.1% is still avoided where an otherwise identical 2008 bond would
+    avoid nothing.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: true
+    private_activity: true
+    amt_applies: true
+    issue_year: 2009
+  expect:
+    amt_preference_applies: false
+    effective_tax_rate_avoided: "50.100%"
+    taxable_equivalent_yield: "7.014%"
+
+- id: muni-private-activity-issued-in-2008-does-not
+  rules: [private_activity_amt_exempt_issue_years]
+  description: >
+    One year earlier and the preference applies, so the same taxpayer in AMT
+    gets no advantage at all. The window is narrow and the difference total.
+  calc: muni_yield
+  given:
+    municipal_yield: "0.035"
+    federal_rate: "0.37"
+    state_rate: "0.093"
+    niit_applies: true
+    private_activity: true
+    amt_applies: true
+    issue_year: 2008
+  expect: {amt_preference_applies: true, taxable_equivalent_yield: "3.500%"}

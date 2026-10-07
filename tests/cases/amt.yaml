@@ -1,0 +1,71 @@
+# Alternative minimum tax. OBBBA reset the phase-out threshold and raised the
+# rate to 50% from 2026, so these cases pin behaviour that changed this year.
+
+- id: amt-below-phaseout-full-exemption
+  rules: [amt]
+  description: >
+    AMTI 600,000 MFJ is below the 1,000,000 threshold, so the full 140,200
+    exemption survives. Base 459,800: 26% x 244,500 = 63,570 plus
+    28% x 215,300 = 60,284, giving 123,854.
+  calc: amt
+  given: {amti: "600000", regular_tax: "120000", filing_status: MFJ}
+  expect:
+    effective_exemption: "140200.00"
+    tentative_minimum_tax: "123854.00"
+    amt_payable: "3854.00"
+    applies: true
+
+- id: amt-not-owed-when-regular-tax-is-higher
+  rules: [amt]
+  description: AMT is the excess over regular tax, so a higher regular tax means none.
+  calc: amt
+  given: {amti: "600000", regular_tax: "200000", filing_status: MFJ}
+  expect: {amt_payable: "0.00", applies: false}
+
+- id: amt-exemption-phases-out-at-fifty-percent
+  rules: [amt]
+  description: >
+    AMTI 1,200,000 is 200,000 over the MFJ threshold. At 50 cents on the dollar
+    that removes 100,000 of the 140,200 exemption, leaving 40,200.
+  calc: amt
+  given: {amti: "1200000", regular_tax: "250000", filing_status: MFJ}
+  expect:
+    exemption_lost_to_phaseout: "100000.00"
+    effective_exemption: "40200.00"
+
+- id: amt-exemption-fully-eliminated
+  rules: [amt]
+  description: The loss is capped at the exemption; it cannot go negative.
+  calc: amt
+  given: {amti: "1400000", regular_tax: "300000", filing_status: MFJ}
+  expect:
+    exemption_lost_to_phaseout: "140200.00"
+    effective_exemption: "0.00"
+    tentative_minimum_tax: "387110.00"
+
+- id: amt-single-thresholds-are-half
+  rules: [amt]
+  description: A single filer starts losing the exemption at 500,000.
+  calc: amt
+  given: {amti: "700000", regular_tax: "150000", filing_status: SINGLE}
+  expect: {exemption_lost_to_phaseout: "90100.00", effective_exemption: "0.00"}
+
+- id: amt-preserves-preferential-rates-on-gains
+  rules: [amt, capital_gain_brackets]
+  description: >
+    Capital gain keeps its preferential rate inside AMT. Base 459,800 less the
+    400,000 gain leaves 59,800 of ordinary base at 26% = 15,548. The gain
+    stacked on 59,800 puts 39,100 in the 0% band and 360,900 at 15% = 54,135.
+    Tentative minimum tax 69,683. Taxing the whole base at 26/28% would have
+    given 123,854 — an overstatement of more than 54,000.
+  calc: amt
+  given: {amti: "600000", regular_tax: "0", filing_status: MFJ,
+          net_capital_gain: "400000"}
+  expect: {preferential_gain: "400000.00", tentative_minimum_tax: "69683.00"}
+
+- id: amt-low-income-owes-nothing
+  rules: [amt]
+  description: AMTI below the exemption leaves no base at all.
+  calc: amt
+  given: {amti: "100000", regular_tax: "8000", filing_status: MFJ}
+  expect: {amt_base: "0.00", tentative_minimum_tax: "0.00", amt_payable: "0.00"}

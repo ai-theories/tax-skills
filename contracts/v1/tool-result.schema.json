@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://taxagent.local/contracts/v1/tool-result.schema.json",
+  "title": "ToolResult",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "status",
+    "execution_authorized"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "completed_with_limitations",
+        "accepted",
+        "needs_input",
+        "blocked",
+        "failed"
+      ]
+    },
+    "execution_authorized": {
+      "const": false,
+      "description": "No result in this release authorizes an action."
+    },
+    "result_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snapshot_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "engine_manifest_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": {
+        "enum": [
+          "passed",
+          "failed",
+          "incomplete"
+        ]
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "unresolved_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "supported_alternative": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "job_ref": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object"
+    }
+  }
+}

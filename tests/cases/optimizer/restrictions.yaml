@@ -1,0 +1,62 @@
+# Restrictions come from reviewed business rules and bind absolutely.
+- {id: restrict-security-is-never-sold, category: restrictions, portfolio_ref: mixed,
+   description: "A do-not-sell security stays untouched even when it is the obvious source of cash.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA]}]},
+   expect: {sells_exclude: [lot_gain_big]}}
+- {id: restrict-two-securities, category: restrictions, portfolio_ref: mixed,
+   description: "Several restricted securities are all excluded.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA, CCC]}]},
+   expect: {sells_exclude: [lot_gain_big, lot_gain_small]}}
+- {id: restrict-account-blocks-everything-in-it, category: restrictions, portfolio_ref: mixed,
+   description: "A restricted account contributes nothing at all.",
+   constraints: {cash_target: "5000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: FROZEN, accounts: [acct_a]}]},
+   expect: {trade_count: 0, solver_status: infeasible}}
+- {id: restrict-min-holding-blocks-recent-lot, category: restrictions, portfolio_ref: fresh,
+   description: "A lot held fewer days than policy allows cannot be sold.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: MIN_HOLD, min_holding_days: 90}]},
+   expect: {sells_exclude: [lot_recent]}}
+- {id: restrict-min-holding-allows-seasoned-lot, category: restrictions, portfolio_ref: fresh,
+   description: "A long-held lot passes the same minimum-holding policy.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: MIN_HOLD, min_holding_days: 90}]},
+   expect: {sells_include: [lot_seasoned]}}
+- {id: restrict-min-holding-zero-blocks-nothing, category: restrictions, portfolio_ref: fresh,
+   description: "A zero-day minimum is no restriction at all.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: MIN_HOLD, min_holding_days: 0}]},
+   expect: {solver_status: feasible}}
+- {id: restrict-everything-is-infeasible, category: restrictions, portfolio_ref: mixed,
+   description: "Restricting every security leaves nothing to sell.",
+   constraints: {cash_target: "1000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA, BBB, CCC, DDD]}]},
+   expect: {trade_count: 0, solver_status: infeasible}}
+- {id: restrict-plus-budget-interact, category: restrictions, portfolio_ref: mixed,
+   description: "A restriction on the loss lot removes the offset the budget relied on.",
+   constraints: {cash_target: "20000", gain_budget: {amount: "0", netting: net_gains},
+                 restrictions: [{code: DO_NOT_SELL, securities: [BBB]}]},
+   expect: {net_gain_at_most: "0"}}
+- {id: restrict-unrelated-security-has-no-effect, category: restrictions, portfolio_ref: mixed,
+   description: "Restricting a security the portfolio does not hold changes nothing.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [ZZZ]}]},
+   expect: {solver_status: feasible}}
+- {id: restrict-loss-lot-still-allows-other-losses, category: restrictions,
+   portfolio_ref: losses_only,
+   description: "Restricting one loss lot leaves the other available.",
+   constraints: {cash_target: "8000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [BBB]}]},
+   expect: {sells_exclude: [lot_loss_big], sells_include: [lot_loss_small]}}
+- {id: restrict-no-restrictions-declared, category: restrictions, portfolio_ref: mixed,
+   description: "An empty restriction list is not a restriction.",
+   constraints: {cash_target: "6000", gain_budget: {amount: "15000"}, restrictions: []},
+   expect: {solver_status: feasible}}
+- {id: restrict-account-and-security-together, category: restrictions, portfolio_ref: mixed,
+   description: "Account and security restrictions apply together, not in preference.",
+   constraints: {cash_target: "1000", gain_budget: {amount: "15000"},
+                 restrictions: [{code: DO_NOT_SELL, securities: [AAA]},
+                                {code: FROZEN, accounts: [acct_a]}]},
+   expect: {trade_count: 0}}
