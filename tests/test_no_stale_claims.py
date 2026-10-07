@@ -204,3 +204,41 @@ def test_every_reference_a_skill_names_exists():
                         f"{os.path.relpath(path, PROJECT_ROOT)} names "
                         f"references/{named}, which resolves neither beside it "
                         "nor at the plugin root")
+
+
+# --- the generated site ---------------------------------------------------
+# The guard above reads .md files. The public page is not a .md file: it is
+# assembled by scripts/build_site.py, whose refusal list and FAQ are typed by
+# hand. That page told the open internet "no validated joint optimizer exists"
+# for as long as one shipped, and claimed 2024-2026 coverage when every pack
+# covers 2026 alone. Scanning the rendered output covers any future prose the
+# generator grows, which scanning its source would not.
+
+def _rendered_site() -> str:
+    import sys
+    scripts = os.path.join(PROJECT_ROOT, "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import build_site
+    return build_site.build_index() + build_site.build_llms_txt()
+
+
+@pytest.mark.parametrize("pattern,engine", ABSENCE_CLAIMS,
+                         ids=[e for _, e in ABSENCE_CLAIMS])
+def test_generated_site_never_says_a_shipped_engine_is_missing(pattern, engine):
+    entry = REGISTRY.engine(engine)
+    if entry is None or entry.status != "implemented":
+        pytest.skip(f"{engine} does not ship, so the claim is true")
+    found = pattern.search(_rendered_site())
+    assert not found, (
+        f"the published page says {engine} is missing: {found.group(0)!r}")
+
+
+def test_generated_site_claims_only_the_tax_years_the_registry_covers():
+    years = sorted({y for e in REGISTRY.engines for y in (e.tax_years or [])})
+    page = _rendered_site()
+    for year in range(2015, 2031):
+        if year in years:
+            continue
+        assert f"tax for {year}" not in page, year
+        assert f"-{year}:" not in page, year

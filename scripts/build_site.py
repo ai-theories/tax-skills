@@ -35,9 +35,26 @@ import yaml  # noqa: E402
 
 from taxagent import __version__  # noqa: E402
 from taxagent.decisions.rule_registry import default_rules  # noqa: E402
+from taxagent.console.inventory import inventory  # noqa: E402
 
 SITE_URL = "https://ai-theories.github.io/tax-skills/"
 REPO_URL = "https://github.com/ai-theories/tax-skills"
+
+
+def covered_years() -> str:
+    """The tax years the registry actually covers.
+
+    Typed by hand this said "2024-2026" while every pack covered 2026 alone.
+    A claim about coverage is read from the registry, like every other claim
+    on this page.
+    """
+    engines = read_yaml("capabilities", "engines.yaml")["engines"]
+    years = sorted({y for e in engines for y in e.get("tax_years", [])})
+    if not years:
+        return "no reviewed tax year"
+    if len(years) == 1:
+        return str(years[0])
+    return f"{years[0]}-{years[-1]}"
 SKILLS_DIR = os.path.join(ROOT, "skills")
 E = html.escape
 
@@ -86,9 +103,10 @@ def last_modified() -> str:
 #: The refusals are the product. They are listed explicitly rather than left
 #: for a reader to discover by hitting one.
 REFUSALS: List[Tuple[str, str]] = [
-    ("Joint household optimization",
-     "No validated joint optimizer exists, so the scope is refused. Coordination across "
-     "accounts and UMA sleeves is available and is never called optimal."),
+    ("A municipal bond inside a portfolio engine",
+     "Munis are priced on their own server. No portfolio engine reads one, because "
+     "accrued market discount is not tracked in lot accounting, so a muni lot cannot "
+     "be harvested, screened or rebalanced."),
     ("Tax owed, in dollars",
      "No return-level liability engine is bound. Gains and losses are produced; converting "
      "them to tax needs facts and an engine this release does not have."),
@@ -121,10 +139,12 @@ FAQ: List[Tuple[str, str]] = [
      "execution_authorized: false. A future execution service would need action-bound "
      "authorization enforced by the receiving system."),
     ("What does it actually cover?",
-     "US federal investment tax for 2024-2026: US equities and US-listed ETFs, long "
-     "positions, USD, one account at a time or a coordinated household. Municipal bonds, "
-     "options, K-1 partnerships, digital assets and equity compensation are out of scope, "
-     "and the registry refuses them rather than approximating."),
+     f"US federal investment tax for {covered_years()}: US equities and US-listed ETFs, "
+     "long positions, USD, and one account, a coordinated household or a jointly "
+     "optimized one. Municipal bonds are priced on their own server and stay outside "
+     "every portfolio engine. Options, K-1 partnerships, digital assets and equity "
+     "compensation are out of scope, and the registry refuses them rather than "
+     "approximating."),
     ("Where do the tax rules live?",
      "In a versioned pack under rules/tax/, each rule carrying its authority, legal "
      "effective date and the time we recorded it. The engines read from the pack, a "
@@ -377,6 +397,9 @@ python3 scripts/serve_dashboard.py       # dashboard on 127.0.0.1:4180
 python3 scripts/smoke_test.py            # check every scenario still behaves</pre>
 <p class="lede">The dashboard runs the same scenarios against the same backend the MCP
 tools call. This page is static; served locally, the panel below turns on.</p>
+<p class="lede"><strong><a href="cases.html">Every scripted case &rarr;</a></strong>
+All {inventory()['total']} of them, grouped by objective, each linking to the file that
+defines it. Listing only &mdash; running them needs the console above.</p>
 
 <section id="live">
   <h2>Live scenarios</h2>
@@ -462,11 +485,85 @@ def build_llms_full() -> str:
     return "\n".join(parts)
 
 
+def build_cases() -> str:
+    """Every scripted case, grouped by objective.
+
+    The console at 127.0.0.1:4180 can run these; a static page cannot, and
+    says so rather than replaying a recorded answer and calling it a result.
+    What this page is for is the part that needs no backend: seeing the whole
+    surface at once, and getting from a case to the file that defines it.
+    """
+    report = inventory()
+    suites = report["suites"]
+    sections = []
+    for group in report["groups"]:
+        rows = []
+        for case in group["cases"]:
+            chip = "info" if case["runnable"] else "warn"
+            label = "runs live" if case["runnable"] else case["suite"]
+            rows.append(
+                f"<tr><td><code>{E(case['id'])}</code></td>"
+                f"<td>{E(case['pins'])}</td>"
+                f"<td><span class='chip {chip}'>{E(label)}</span></td>"
+                f"<td><a href='{REPO_URL}/blob/main/{E(case['source'])}'>"
+                f"<code>{E(case['source'].rsplit('/', 1)[-1])}</code></a></td></tr>")
+        sections.append(
+            f"<h2 id='{E(group['group'].lower().replace(' ', '-').replace(',', ''))}'>"
+            f"{E(group['group'])} <span class='chip info'>{group['count']}</span></h2>\n"
+            f"<p class=\"lede\">{E(group['lead'])}</p>\n"
+            "<table>\n<thead><tr><th>Case</th><th>What it pins</th><th>Suite</th>"
+            "<th>Defined in</th></tr></thead>\n<tbody>\n"
+            + "\n".join(rows) + "\n</tbody></table>")
+
+    contents = " &middot; ".join(
+        f"<a href='#{g['group'].lower().replace(' ', '-').replace(',', '')}'>"
+        f"{E(g['group'])}</a> ({g['count']})" for g in report["groups"])
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Every scripted case &mdash; Tax Agent</title>
+<meta name="description" content="All {report['total']} scripted cases in the Tax Agent
+suite, grouped by what the client is trying to achieve: loss harvesting, raising cash,
+capping gains, rebalancing, household coordination, municipal bonds and more.">
+<link rel="canonical" href="{SITE_URL}cases.html">
+<style>{STYLE}</style>
+</head>
+<body>
+<header>
+<p class="lede"><a href="{SITE_URL}">&larr; Tax Agent</a></p>
+<h1>Every scripted case</h1>
+<p class="lede">All <strong>{report['total']}</strong> cases that run on every build,
+grouped by what the client is trying to achieve. {suites['console']} run live over
+JSON-RPC against the MCP servers, {suites['rule']} pin figures in the rule packs, and
+{suites['conformance']} are optimizer invariants recomputed from the snapshot.</p>
+<p class="lede">Nothing executes on this page. It is a listing: every case links to the
+file that defines it. To run them, clone the repository and start the console
+&mdash; <code>python3 scripts/serve_dashboard.py</code> &mdash; where the
+{suites['console']} console cases spawn a real server and speak the protocol.</p>
+<p class="lede">{contents}</p>
+</header>
+<main>
+{chr(10).join(sections)}
+</main>
+<footer>
+<p>Generated from <code>src/taxagent/console/inventory.py</code> and
+<code>tests/cases/</code> at build time, so this page cannot drift from the suite.
+<a href="{REPO_URL}">Source</a> &middot; Apache-2.0</p>
+</footer>
+</body>
+</html>
+"""
+
+
 def build_sitemap() -> str:
     stamp = last_modified()
     urls = "".join(
         f"<url><loc>{u}</loc><lastmod>{stamp}</lastmod></url>"
-        for u in (SITE_URL, f"{SITE_URL}llms.txt", f"{SITE_URL}llms-full.txt"))
+        for u in (SITE_URL, f"{SITE_URL}cases.html", f"{SITE_URL}llms.txt",
+                  f"{SITE_URL}llms-full.txt"))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
             f"{urls}</urlset>\n")
@@ -499,6 +596,7 @@ def build_site(out_dir: str) -> List[str]:
     os.makedirs(out_dir, exist_ok=True)
     files = {
         "index.html": build_index(),
+        "cases.html": build_cases(),
         "404.html": build_404(),
         "llms.txt": build_llms_txt(),
         "llms-full.txt": build_llms_full(),
