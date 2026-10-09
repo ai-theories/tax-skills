@@ -170,6 +170,8 @@ FAQ: List[Tuple[str, str]] = [
 # --- page ----------------------------------------------------------------
 
 STYLE = """
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:8px;top:8px;background:var(--chip-info);color:var(--accent);padding:8px 12px;border-radius:6px;z-index:9}
 :root{--bg:#fbfbfa;--panel:#fff;--ink:#1b1b19;--muted:#6b6b66;--line:#e3e2de;
 --accent:#3b5bdb;--ok:#2b7a4b;--warn:#9a6700;--code:#f5f5f3;
 --chip-ok:#e6f2ea;--chip-warn:#fdf3d8;--chip-info:#e8edfb}
@@ -247,6 +249,147 @@ fetch('/api/scenarios').then(r => r.ok ? r.json() : Promise.reject()).then(list 
 """
 
 
+#: One favicon for every page, inline so it costs no request.
+FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+           "viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' "
+           "fill='%2317181a'/%3E%3Ctext x='32' y='45' font-size='34' "
+           "text-anchor='middle' fill='%236cc08a' "
+           "font-family='Helvetica,Arial'%3E%C2%A7%3C/text%3E%3C/svg%3E")
+
+#: Agents that read pages to answer questions. Naming them is the difference
+#: between "we did not forbid it" and "this is meant to be read and cited",
+#: which is the only lever a static site has over whether it is quoted.
+ANSWER_ENGINES = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot",
+                  "Claude-Web", "anthropic-ai", "PerplexityBot", "Perplexity-User",
+                  "Google-Extended", "Applebot-Extended", "CCBot", "cohere-ai",
+                  "Meta-ExternalAgent", "Amazonbot", "Bytespider", "DuckAssistBot",
+                  "YouBot", "Diffbot", "Timpibot"]
+
+
+def head_meta(title: str, description: str, url: str, *,
+              og_title: str, og_description: str) -> str:
+    """The head every page shares.
+
+    Social previews were pointing at an SVG, which X, LinkedIn, Facebook and
+    Slack do not render, so every share produced a blank card. The image is a
+    PNG at the 1200x630 those platforms expect, declared with its dimensions so
+    a crawler need not fetch it to lay the card out.
+    """
+    flat = " ".join(description.split())
+    return f"""<title>{E(title)}</title>
+<meta name="description" content="{E(flat)}">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large,
+ max-video-preview:-1">
+<link rel="canonical" href="{url}">
+<link rel="icon" href="{FAVICON}">
+<meta name="theme-color" content="#17181a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tax Agent">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="{E(og_title)}">
+<meta property="og:description" content="{E(og_description)}">
+<meta property="og:url" content="{url}">
+<meta property="og:image" content="{SITE_URL}og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Tax Agent: Claude skills for US investment tax
+ analysis, backed by a deterministic engine">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{E(og_title)}">
+<meta name="twitter:description" content="{E(og_description)}">
+<meta name="twitter:image" content="{SITE_URL}og-image.png">
+<link rel="alternate" type="text/plain" href="{SITE_URL}llms.txt"
+ title="Summary for language models">
+<link rel="alternate" type="text/plain" href="{SITE_URL}llms-full.txt"
+ title="Full text for language models">"""
+
+
+def json_ld(*blocks: Dict[str, Any]) -> str:
+    """Structured data as one graph.
+
+    An answer engine quoting a page needs to know what the thing is, who
+    publishes it, and under what licence. Nothing here is a claim the page does
+    not already make in prose.
+    """
+    graph = {"@context": "https://schema.org", "@graph": list(blocks)}
+    return ('<script type="application/ld+json">'
+            + json.dumps(graph, ensure_ascii=False, separators=(",", ":"))
+            + "</script>")
+
+
+def software_schema() -> Dict[str, Any]:
+    manifest = json.load(open(os.path.join(ROOT, ".claude-plugin", "plugin.json"),
+                              encoding="utf-8"))
+    return {
+        "@type": "SoftwareApplication",
+        "@id": f"{SITE_URL}#software",
+        "name": "Tax Agent",
+        "alternateName": manifest.get("displayName", "Tax Agent"),
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Claude skills for US investment tax analysis",
+        "operatingSystem": "macOS, Linux, Windows",
+        "softwareVersion": __version__,
+        "url": SITE_URL,
+        "codeRepository": REPO_URL,
+        "programmingLanguage": "Python",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "isAccessibleForFree": True,
+        "description": " ".join(manifest["description"].split()),
+        "keywords": ", ".join(manifest.get("keywords", [])),
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+    }
+
+
+def faq_schema() -> Dict[str, Any]:
+    return {
+        "@type": "FAQPage",
+        "@id": f"{SITE_URL}#faq",
+        "mainEntity": [
+            {"@type": "Question", "name": q,
+             "acceptedAnswer": {"@type": "Answer", "text": a}}
+            for q, a in FAQ],
+    }
+
+
+def breadcrumb_schema(name: str, page: str) -> Dict[str, Any]:
+    return {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Tax Agent", "item": SITE_URL},
+            {"@type": "ListItem", "position": 2, "name": name,
+             "item": f"{SITE_URL}{page}"},
+        ],
+    }
+
+
+def cases_schema(report: Dict[str, Any]) -> Dict[str, Any]:
+    """The case inventory as a Dataset, with each objective as a part.
+
+    A listing of 301 rows is the kind of page an answer engine either quotes
+    well or not at all. Describing it as a dataset, with the group names and
+    their counts, gives it something to quote that is true.
+    """
+    return {
+        "@type": "Dataset",
+        "@id": f"{SITE_URL}cases.html#dataset",
+        "name": "Tax Agent scripted case inventory",
+        "description": f"{report['total']} scripted test cases covering US investment "
+                       "tax analysis, grouped by client objective. "
+                       f"{report['suites']['console']} run live against MCP servers, "
+                       f"{report['suites']['rule']} pin rule-pack figures, and "
+                       f"{report['suites']['conformance']} are optimizer invariants.",
+        "url": f"{SITE_URL}cases.html",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "isAccessibleForFree": True,
+        "creator": {"@type": "Organization", "name": "ai-theories", "url": REPO_URL},
+        "variableMeasured": [
+            {"@type": "PropertyValue", "name": group["group"],
+             "value": group["count"], "description": " ".join(group["lead"].split())}
+            for group in report["groups"]],
+    }
+
+
 def build_index() -> str:
     engines = read_yaml("capabilities", "engines.yaml")["engines"]
     tools = read_yaml("capabilities", "tools.yaml")["tools"]
@@ -294,19 +437,20 @@ def build_index() -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tax Agent: Claude skills for US investment tax analysis</title>
-<meta name="description" content="Open-source Claude skills for US investment tax:
-lot-level gain and loss, wash-sale screening across accounts and UMA sleeves, and
-loss-harvest scenarios, backed by a deterministic Python engine. Analysis only.">
-<meta property="og:title" content="Tax Agent">
-<meta property="og:description" content="Claude skills for US investment tax analysis,
-backed by a deterministic engine. Analysis only.">
-<meta property="og:url" content="{SITE_URL}">
-<meta property="og:image" content="{SITE_URL}og-image.svg">
-<link rel="canonical" href="{SITE_URL}">
+{head_meta(
+    "Tax Agent: Claude skills for US investment tax analysis",
+    "Open-source Claude skills for US investment tax: lot-level gain and loss, "
+    "wash-sale screening across accounts and UMA sleeves, and loss-harvest scenarios, "
+    "backed by a deterministic Python engine. Analysis only.",
+    SITE_URL,
+    og_title="Tax Agent: Claude skills for US investment tax analysis",
+    og_description="Claude skills for US investment tax analysis, backed by a "
+                   "deterministic engine. Analysis only.")}
+{json_ld(software_schema(), faq_schema())}
 <style>{STYLE}</style>
 </head>
 <body>
+<a class="skip" href="#content">Skip to contents</a>
 <div class="wrap">
 
 <header>
@@ -321,6 +465,8 @@ backed by a deterministic engine. Analysis only.">
   reviewed rule pack. Runs locally &mdash; no sign-up, no API key, no client data leaving
   the machine.</p>
 </header>
+
+<main id="content">
 
 <h2>What it does</h2>
 <p class="lede">Six calculators and four portfolio workflows, every figure verified against
@@ -408,6 +554,8 @@ defines it. Listing only &mdash; running them needs the console above.</p>
 
 <h2>Frequently asked questions</h2>
 {faq}
+
+</main>
 
 <footer>
   Apache-2.0 &middot; v{__version__} &middot; Not tax, investment or legal advice.<br>
@@ -524,14 +672,20 @@ def build_cases() -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Every scripted case &mdash; Tax Agent</title>
-<meta name="description" content="All {report['total']} scripted cases in the Tax Agent
-suite, grouped by what the client is trying to achieve: loss harvesting, raising cash,
-capping gains, rebalancing, household coordination, municipal bonds and more.">
-<link rel="canonical" href="{SITE_URL}cases.html">
+{head_meta(
+    "Every scripted case: 301 tested tax scenarios \u2014 Tax Agent",
+    f"All {report['total']} scripted cases in the Tax Agent suite, grouped by what the "
+    "client is trying to achieve: loss harvesting, raising cash, capping gains, "
+    "rebalancing, household coordination, municipal bonds and more.",
+    f"{SITE_URL}cases.html",
+    og_title="Every scripted case: 301 tested tax scenarios",
+    og_description=f"All {report['total']} cases that run on every build, grouped by "
+                   "objective, each linking to the file that defines it.")}
+{json_ld(cases_schema(report), breadcrumb_schema("Every scripted case", "cases.html"))}
 <style>{STYLE}</style>
 </head>
 <body>
+<a class="skip" href="#content">Skip to contents</a>
 <header>
 <p class="lede"><a href="{SITE_URL}">&larr; Tax Agent</a></p>
 <h1>Every scripted case</h1>
@@ -545,7 +699,7 @@ file that defines it. To run them, clone the repository and start the console
 {suites['console']} console cases spawn a real server and speak the protocol.</p>
 <p class="lede">{contents}</p>
 </header>
-<main>
+<main id="content">
 {chr(10).join(sections)}
 </main>
 <footer>
@@ -556,6 +710,36 @@ file that defines it. To run them, clone the repository and start the console
 </body>
 </html>
 """
+
+
+def anchor_headings(page: str) -> str:
+    """Give every section heading a stable id.
+
+    A page an answer engine can only cite whole is a page it cites badly. With
+    an id per section, a quote about wash sales can link to the wash-sale
+    section rather than to the top of a long page.
+    """
+    def slug(match: "re.Match[str]") -> str:
+        text = re.sub(r"<[^>]+>", "", match.group(2))
+        ident = re.sub(r"[^a-z0-9]+", "-", html.unescape(text).lower()).strip("-")
+        return f'<h{match.group(1)} id="{ident}">{match.group(2)}</h{match.group(1)}>'
+
+    return re.sub(r"<h([23])>(.*?)</h\1>", slug, page, flags=re.S)
+
+
+def build_robots() -> str:
+    """Allow everything, and say so to the answer engines by name.
+
+    A bare `Allow: /` already permits them. Listing them is a statement of
+    intent rather than a permission change: this site is written to be read and
+    quoted by an assistant, and llms.txt is pointed at from here so a crawler
+    that honours it finds it without guessing.
+    """
+    named = "\n\n".join(f"User-agent: {agent}\nAllow: /" for agent in ANSWER_ENGINES)
+    return (f"User-agent: *\nAllow: /\n\n{named}\n\n"
+            f"Sitemap: {SITE_URL}sitemap.xml\n"
+            f"# Summary for language models: {SITE_URL}llms.txt\n"
+            f"# Full text for language models: {SITE_URL}llms-full.txt\n")
 
 
 def build_sitemap() -> str:
@@ -595,17 +779,24 @@ analysis only &#183; v{__version__} &#183; Apache-2.0</text>
 def build_site(out_dir: str) -> List[str]:
     os.makedirs(out_dir, exist_ok=True)
     files = {
-        "index.html": build_index(),
+        "index.html": anchor_headings(build_index()),
         "cases.html": build_cases(),
         "404.html": build_404(),
         "llms.txt": build_llms_txt(),
         "llms-full.txt": build_llms_full(),
-        "robots.txt": f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}sitemap.xml\n",
+        "robots.txt": build_robots(),
         "sitemap.xml": build_sitemap(),
         "og-image.svg": build_og_image(),
+        "og-image.png": open(os.path.join(ROOT, "assets", "og-image.png"),
+                             "rb").read(),
     }
     for name, body in files.items():
-        with open(os.path.join(out_dir, name), "w", encoding="utf-8") as handle:
+        path = os.path.join(out_dir, name)
+        if isinstance(body, bytes):          # the social card is a real image
+            with open(path, "wb") as binary:
+                binary.write(body)
+            continue
+        with open(path, "w", encoding="utf-8") as handle:
             handle.write(body)
     return sorted(files)
 

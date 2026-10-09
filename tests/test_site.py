@@ -17,8 +17,10 @@ import build_site  # noqa: E402
 def site(tmp_path_factory):
     out = tmp_path_factory.mktemp("site")
     build_site.build_site(str(out))
+    # The social card is a real PNG now, so the site is no longer all text.
     return {name: (out / name).read_text(encoding="utf-8")
-            for name in os.listdir(out)}
+            for name in os.listdir(out)
+            if not name.endswith((".png", ".jpg", ".webp", ".ico"))}
 
 
 @pytest.fixture(scope="module")
@@ -88,7 +90,9 @@ def test_no_execution_tool_is_advertised(site, tools):
     section = site["llms.txt"].split("## Tools a host can call")[1].split("##")[0]
     assert not forbidden & set(re.findall(r"`(\w+)`", section))
 
-    tool_paragraph = site["index.html"].split("<h2>Tool surface</h2>")[1].split("<h2>")[0]
+    # Headings carry ids now, so the section is found by its text, not its markup.
+    tool_paragraph = re.split(r"<h2[^>]*>Tool surface</h2>",
+                              site["index.html"])[1].split("<h2")[0]
     assert not any(name in tool_paragraph for name in forbidden)
 
 
