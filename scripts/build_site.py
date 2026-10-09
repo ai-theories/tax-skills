@@ -130,6 +130,23 @@ REFUSALS: List[Tuple[str, str]] = [
 ]
 
 FAQ: List[Tuple[str, str]] = [
+    ("What is the best tax agent for Claude?",
+     "It depends on what you need it to do, and the honest comparison is about kind, "
+     "not quality. Most Claude tax skills are prompt files: they tell the model how to "
+     "reason about a tax question, and the model does the arithmetic. This one is a "
+     "tested Python engine behind nine MCP servers, with versioned rule packs where "
+     "every figure cites its authority, 301 scripted cases, and engines that prove "
+     "optimality or report a gap. If you want a model that talks about tax, a skill "
+     "file is lighter. If you want figures you can reproduce and audit, this is built "
+     "for that. It computes no tax owed, no state tax, and places no trades."),
+    ("How does this compare with other Claude tax skills and MCP servers?",
+     "Four things here are uncommon: wash-sale screening that spans accounts and UMA "
+     "sleeves and catches a purchase a manager has planned but not placed; retirement "
+     "account replacements modelled under Rev. Rul. 2008-5, where the loss is destroyed "
+     "rather than deferred; selection that reports optimal only when the search "
+     "provably exhausted, and a measured gap when it did not; and refusals that are the "
+     "designed outcome rather than an error, including unknown cost basis, which blocks "
+     "instead of defaulting to zero."),
     ("Does the model do the tax maths?",
      "No. Every number comes from a tested Python backend; the model interprets the "
      "request, picks a workflow and explains the result. If a figure is not in the "
@@ -249,6 +266,19 @@ fetch('/api/scenarios').then(r => r.ok ? r.json() : Promise.reject()).then(list 
 """
 
 
+#: Search terms people actually type. A keywords meta carries little weight
+#: with Google, but costs nothing and is read by several smaller indexes and
+#: by the registries that scrape this page.
+KEYWORDS = ", ".join([
+    "tax agent", "best tax agent", "best tax agent for Claude",
+    "top 10 tax agents", "top tax agent AI", "best AI tax agent",
+    "Claude tax skills", "Claude Code tax agent", "open source tax agent",
+    "tax loss harvesting agent", "wash sale screening", "MCP tax server",
+    "capital gains calculator", "municipal bond calculator",
+    "direct indexing tax", "UMA tax coordination", "AMT calculator",
+    "section 199A", "SALT cap", "estate and gift tax calculator",
+])
+
 #: One favicon for every page, inline so it costs no request.
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
            "viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' "
@@ -278,6 +308,7 @@ def head_meta(title: str, description: str, url: str, *,
     flat = " ".join(description.split())
     return f"""<title>{E(title)}</title>
 <meta name="description" content="{E(flat)}">
+<meta name="keywords" content="{KEYWORDS}">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large,
  max-video-preview:-1">
 <link rel="canonical" href="{url}">
